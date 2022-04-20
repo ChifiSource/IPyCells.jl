@@ -1,5 +1,16 @@
-# IpyJL.jl
-A simple IPython notebook to Julia code parser.
+<div align="center" style = "box-pack: start;">
+  </br>
+  <img width = 300 src="https://github.com/ChifiSource/image_dump/blob/main/ipyjl/logo.png" >
+  
+  
+  [![version](https://juliahub.com/docs/Lathe/version.svg)](https://juliahub.com/ui/Packages/Lathe/6rMNJ)
+[![deps](https://juliahub.com/docs/Lathe/deps.svg)](https://juliahub.com/ui/Packages/Lathe/6rMNJ?t=2)
+[![pkgeval](https://juliahub.com/docs/Lathe/pkgeval.svg)](https://juliahub.com/ui/Packages/Lathe/6rMNJ)
+  </br>
+  </br>
+  <h1>Ipy.jl</h1>
+  </div>
+
 ### Adding
 ```julia
 julia> ]
