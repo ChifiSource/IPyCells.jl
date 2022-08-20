@@ -13,7 +13,6 @@ module IPy
 __precompile__()
 abstract type AbstractCell end
 include("IPyCells.jl")
-using IPy.IPyCells: Cell
 include("IPyRW.jl")
 
 export ipynbjl, open, save

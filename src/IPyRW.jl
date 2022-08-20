@@ -38,7 +38,7 @@ function read_plto(uri::String)
     for cell in values(cellpos)
         unprocessed_uuid = x[cell[1]]
         text_data = x[cell[2:end]]
-        cl = Cell("", ctype::String = "code", cont::String = "")
+        cl = Cell("", ctype = "code", cont = "")
         push!(cells, cl)
     end
     return(cells)

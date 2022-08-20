@@ -1,4 +1,3 @@
-module IPyCells
 
 """
 ## Cell(::Any, ::String, ::Any, ::Dict, ::Integer)
@@ -12,7 +11,7 @@ for Jupyter cells.
 ### Constructors
 - Cell(::Dict) Constructs cells from a dictionary of cell-data.
 """
-mutable struct Cell <: AbstractCell
+mutable struct Cell
         cont::Any
         outputs::Any
         ctype::String
@@ -55,7 +54,3 @@ end
 function create_hidden(content::String, n::Any ...)
 
 end
-
-new_cells() = Vector{AbstractCell}()
-
-end # module
