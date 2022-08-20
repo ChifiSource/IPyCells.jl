@@ -1,4 +1,3 @@
-module IPyRW
 using JSON
 
 function plto_cell_lines(uri::String)
@@ -21,7 +20,7 @@ function plto_cell_lines(uri::String)
 end
 
 """
-## read_ipynb(f::String) -> Vector{Cell}
+## read_ipynb(f::String) -> ::Vector{Cell}
 Reads an IPython notebook into a vector of cells.
 ### example
 read_ipynb("helloworld.ipynb")
@@ -33,16 +32,13 @@ function read_ipynb(f::String)
 end
 
 function read_plto(uri::String)
+    cells::Vector{Cell} = []
     cellpos = plto_cell_lines(uri)
-    cells = []
     x = readlines(uri)
     for cell in values(cellpos)
         unprocessed_uuid = x[cell[1]]
         text_data = x[cell[2:end]]
-        identifier = process_uuid(unprocessed_uuid)
-        inp = InputCell(identifier, text_data)
-        out = OutputCell(UUIDs.uuid1(), "")
-        cl = Cell(inp, out, false, :JL, UUIDs.uuid1())
+        cl = Cell("", ctype::String = "code", cont::String = "")
         push!(cells, cl)
     end
     return(cells)
@@ -52,7 +48,7 @@ function read_jl(f::String)
     cells = Vector{Cell}
     open(f, "r") do i
         for line in i
-            
+
         end
     end
 end
@@ -125,4 +121,3 @@ function read(URI::String, file_types::Dict = Dict("ipynb" => read_ipynb,
     file_ext::String = split(URI, ".")[2]
     file_types[]
 end
-end # module

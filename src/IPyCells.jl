@@ -1,4 +1,5 @@
 module IPyCells
+
 """
 ## Cell(::Any, ::String, ::Any, ::Dict, ::Integer)
 The cell type is just a Julian equivalent to the JSON data that is read in
@@ -12,9 +13,9 @@ for Jupyter cells.
 - Cell(::Dict) Constructs cells from a dictionary of cell-data.
 """
 mutable struct Cell <: AbstractCell
+        cont::Any
         outputs::Any
         ctype::String
-        cont::Any
         n::Integer
         ctref::Dict
         function Cell(nb_cdict::Dict;
@@ -24,12 +25,7 @@ mutable struct Cell <: AbstractCell
             n = 0
             outputs = ""
             new(outputs, nb_cdict["cell_type"], nb_cdict["source"], n)
-    end
-    function Cell(n::Int64 = 1; ctype::String = "code", cont::String = "",
-            ouputs::String = "", ctref = Dict("markdown" => create_markdown,
-                    "code" => create_code,
-                    "hidden" => create_hidden))
-    end
+        end
 end
 
 function create_markdown(content::String, n::Integer ... = 1)
