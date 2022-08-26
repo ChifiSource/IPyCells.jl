@@ -12,12 +12,12 @@ for Jupyter cells.
 - Cell(::Dict) Constructs cells from a dictionary of cell-data.
 """
 mutable struct Cell{T}
-        ctype::String
+        type::String
         source::String
         outputs::Any
         n::Integer
-        function Cell(n::Int64, type::String, content::String, outputs::Any)
-            new{Symbol(ctype)}(type, content, outputs, n)
+        function Cell(n::Int64, type::String, content::String, outputs::Any = "")
+            new{Symbol(type)}(type, content, outputs, n)
         end
 end
 
