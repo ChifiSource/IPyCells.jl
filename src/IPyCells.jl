@@ -11,46 +11,18 @@ for Jupyter cells.
 ### Constructors
 - Cell(::Dict) Constructs cells from a dictionary of cell-data.
 """
-mutable struct Cell
-        cont::Any
-        outputs::Any
+mutable struct Cell{T}
         ctype::String
+        source::String
+        outputs::Any
         n::Integer
-        ctref::Dict
-        function Cell(nb_cdict::Dict;
-            ctref = Dict("markdown" => create_markdown,
-                    "code" => create_code,
-                    "hidden" => create_hidden))
-            n = 0
-            outputs = ""
-            new(outputs, nb_cdict["cell_type"], nb_cdict["source"], n)
+        function Cell(n::Int64, type::String, content::String, outputs::Any)
+            ctype::String = nb_cdict["cell_type"]
+            new{Symbol(ctype)}(nb_cdict["cell_type"], nb_cdict["source"],
+            nb_cdict["outputs"], n)
         end
 end
 
-function create_markdown(content::String, n::Integer ... = 1)
-        content = sep(content)
-        if length(count) != 1
-                        #==
-                # If someone for some reason provides too many arguments to N,
-                #    (Because it is an optional argument) We will pass all
-                arguments
-                All the time, that way if we ever miss any and the adder of the
-                function can reference
-                ==#
-                n = [count = count for count in count][1]::Array{Integer}
-        end
-        for line in content
-                line = line * string("cellmd$n = md\"\"\"")
-                line = line * string(content) * "\"\"\"\n"
-        end
-        return(content)
-end
-
-function create_code(content::String)
-
-end
-
-
-function create_hidden(content::String, n::Any ...)
+function write(io::IO, c::Cell{:})
 
 end
