@@ -19,26 +19,14 @@ function plto_cell_lines(uri::String)
     return(cellpos)
 end
 
-"""
-## read_ipynb(f::String) -> ::Vector{Cell}
-Reads an IPython notebook into a vector of cells.
-### example
-read_ipynb("helloworld.ipynb")
-"""
-function read_ipynb(f::String)
-    file = open(f)
-    j = JSON.parse(file)
-    [Cell(cell) for cell in j["cells"]]
-end
-
 function read_plto(uri::String)
     cells::Vector{Cell} = []
     cellpos = plto_cell_lines(uri)
     x = readlines(uri)
-    for cell in values(cellpos)
+    for (n, cell) in enumerate(values(cellpos))
         unprocessed_uuid = x[cell[1]]
         text_data = x[cell[2:end]]
-        cl = Cell("", ctype = "code", cont = "")
+        cl = Cell("", ctype = "code", cont = text_data)
         push!(cells, cl)
     end
     return(cells)
@@ -54,6 +42,31 @@ function read_jl(f::String)
 end
 
 """
+## cells_to_string(::Vector{Any}) -> ::String
+Converts an array of Cell types into text.
+"""
+function save_jl(cells::Vector{AbstractCell}, path::String)
+    open(path, "w") do file
+            output::String = join([string(cell) for cell in cells])
+           write(file, output)
+    end
+end
+
+"""
+## read_ipynb(f::String) -> ::Vector{Cell}
+Reads an IPython notebook into a vector of cells.
+### example
+read_ipynb("helloworld.ipynb")
+"""
+function read_ipynb(f::String)
+    file = open(f)
+    j = JSON.parse(file)
+    [Cell(cell) for cell in j["cells"]]
+end
+
+
+
+"""
 ## ipynbjl(ipynb_path::String, output_path::String)
 Reads notebook at **ipynb_path** and then outputs as .jl Julia file to
 **output_path**.
@@ -64,34 +77,6 @@ function ipyjl(ipynb_path::String, output_path::String)
     cells = read_ipynb(ipynb_path)
     output = save_jl(cells)
 end
-
-"""
-## cells_to_string(::Vector{Any}) -> ::String
-Converts an array of Cell types into text.
-"""
-function save_jl(cells::Vector{AbstractCell}, output::String)
-    f = ""
-    for (n, cell) in cells
-        line = ""
-        header = string("# $n\n")
-        if cell.ctype == "markdown"
-            println(ctype)
-
-        elseif cell.ctype == "hidden"
-
-        elseif cell.ctype == "code"
-            line = ""
-            line = line * string(sep(cell.cont)) * "\n"
-        else
-
-        end
-        f = f * header * line
-    end
-    open(output_path, "w") do file
-           write(file, output)
-    end
-end
-
 
 """
 ### sep(::Any) -> ::String

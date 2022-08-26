@@ -17,12 +17,14 @@ mutable struct Cell{T}
         outputs::Any
         n::Integer
         function Cell(n::Int64, type::String, content::String, outputs::Any)
-            ctype::String = nb_cdict["cell_type"]
-            new{Symbol(ctype)}(nb_cdict["cell_type"], nb_cdict["source"],
-            nb_cdict["outputs"], n)
+            new{Symbol(ctype)}(type, content, outputs, n)
         end
 end
 
-function write(io::IO, c::Cell{:})
+function string(cell::Cell{:code})
+        cell.source * "\n#==output$(cell.n)\n$(cell.outputs)\n==#\n"
+end
 
+function string(cell::Cell{:md})
+        "\"\"\"\n$(cell.source)\n\"\"\""
 end
