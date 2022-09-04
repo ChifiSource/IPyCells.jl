@@ -37,6 +37,17 @@ function read_jl(uri::String)
     if contains("═╡", readin)
         return(read_plto(uri))
     end
+    finals::Vector{String} = Vector{String}()
+    concat::String = ""
+    for line in readlines("src/Olive.jl")
+        if line == ""
+            push!(finals, concat)
+            concat = ""
+        else
+            concat = concat * "\n" * line
+        end
+    end
+    [Cell(n, "code", s) for (n, s) in enumerate(finals)]::Vector{Cell}
 end
 
 """
