@@ -63,9 +63,8 @@ function read_ipynb(f::String)
         outputs = ""
         ctype = cell["cell_type"]
         source = string(join(cell["source"]))
-        n = cell["execution_count"]
         Cell(n, ctype, source, outputs)
-    end for cell in j["cells"]]::Vector{Cell}
+    end for (n, cell) in enumerate(j["cells"])]::Vector{Cell}
 end
 
 
