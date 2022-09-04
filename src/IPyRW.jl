@@ -39,7 +39,7 @@ function read_jl(uri::String)
     end
     finals::Vector{String} = Vector{String}()
     concat::String = ""
-    for line in readlines("src/Olive.jl")
+    for line in readlines(uri)
         if line == ""
             push!(finals, concat)
             concat = ""
