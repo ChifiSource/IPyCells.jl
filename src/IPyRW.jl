@@ -60,7 +60,7 @@ function read_ipynb(f::String)
     file::String = read(f, String)
     j::Dict = JSON.parse(file)
     [begin
-        outputs = cell["data"]["text/plain"]
+        outputs = ""
         ctype = cell["cell_type"]
         source = cell["source"]
         n = cell["execution_count"]
