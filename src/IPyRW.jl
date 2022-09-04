@@ -47,7 +47,7 @@ function read_jl(uri::String)
             concat = concat * "\n" * line
         end
     end
-    [Cell(n, "code", s) for (n, s) in enumerate(finals)]::Vector{Cell}
+    [Cell(n, "code", s) for (n, s) in enumerate(finals)]::AbstractVector
 end
 
 """
