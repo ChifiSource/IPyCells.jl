@@ -26,18 +26,16 @@ function read_plto(uri::String)
     for (n, cell) in enumerate(values(cellpos))
         unprocessed_uuid = x[cell[1]]
         text_data = x[cell[2:end]]
-        cl = Cell("", ctype = "code", cont = text_data)
+        cl = Cell(n, "code", text_data)
         push!(cells, cl)
     end
     return(cells)
 end
 
-function read_jl(f::String)
-    cells = Vector{Cell}
-    open(f, "r") do i
-        for line in i
-
-        end
+function read_jl(uri::String)
+    readin = read(uri, String)
+    if contains("═╡", readin)
+        return(read_plto(uri))
     end
 end
 
@@ -59,9 +57,15 @@ Reads an IPython notebook into a vector of cells.
 read_ipynb("helloworld.ipynb")
 """
 function read_ipynb(f::String)
-    file = open(f)
-    j = JSON.parse(file)
-    [Cell(cell) for cell in j["cells"]]
+    file::String = read(f, String)
+    j::Dict = JSON.parse(file)
+    [begin
+        outputs = cell["data"]["text/plain"]
+        ctype = cell["cell_type"]
+        source = cell["source"]
+        n = cell["execution_count"]
+        Cell(n, ctype, source, outputs)
+    end for cell in j["cells"]]::Vector{Cell}
 end
 
 
