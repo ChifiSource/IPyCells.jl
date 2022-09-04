@@ -98,15 +98,3 @@ function sep(content::Any)
     end
     total
 end
-
-function save(cells::Vector{AbstractCell}, URI::String,
-    file_types::Dict = Dict("ipynb" => save_ipynb, "jl" => save_jl,
-     "pluto" => save_pluto);  as::String = "jl")
-     file_types[as](cells, URI)::Nothing
-end
-
-function read(URI::String, file_types::Dict = Dict("ipynb" => read_ipynb,
-    "jl" => read_jl, "pluto" => read_pluto); as::String = "jl")
-    file_ext::String = split(URI, ".")[2]
-    file_types[]
-end
