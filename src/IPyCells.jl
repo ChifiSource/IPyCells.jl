@@ -31,6 +31,6 @@ function string(cell::Cell{:md})
         "\"\"\"\n$(cell.source)\n\"\"\""
 end
 
-function getindex(v::Vector{Cell}, s::String)
+function getindex(v::Vector{Cell{<:Any}}, s::String)
         v[findall(c::Cell -> c.id == s)]
 end
