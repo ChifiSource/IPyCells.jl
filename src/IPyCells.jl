@@ -32,5 +32,5 @@ function string(cell::Cell{:md})
 end
 
 function getindex(v::Vector{Cell{<:Any}}, s::String)
-        v[findall(c -> c.id == s)[1]]
+        v[findall(c -> c.id == s, v)[1]]
 end
