@@ -10,7 +10,7 @@ package combines .ipynb, .jl, and .jl pluto files together into one easy to
 use module.
 """
 module IPy
-import Base: string, read
+import Base: string, read, getindex
 
 __precompile__()
 abstract type AbstractCell end
