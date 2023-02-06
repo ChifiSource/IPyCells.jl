@@ -12,6 +12,7 @@ use module.
 module IPy
 import Base: string, read, getindex
 using JSON
+using Random
 
 __precompile__()
 
@@ -38,9 +39,11 @@ mutable struct Cell{T} <: AbstractCell
         outputs::Any
         n::Integer
         function Cell(n::Int64, type::String, content::String,
-                outputs::Any = "")
-                Random.seed!( rand(1:100000) )
-                id::String = randstring(10)::String
+                outputs::Any = ""; id::String = "")
+                if id == ""
+                        Random.seed!(rand(1:100000))
+                        id = randstring(10)::String
+                end
             new{Symbol(type)}(id, type, content, outputs, n)::Cell{<:Any}
         end
 end
