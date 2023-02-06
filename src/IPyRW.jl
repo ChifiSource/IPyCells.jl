@@ -1,7 +1,5 @@
-using JSON
 
 function plto_cell_lines(uri::String)
-    # We need file lines for each cell UUID
     cellpos = Dict()
     first = 0
     ccount = 0
@@ -32,15 +30,25 @@ function read_plto(uri::String)
     return(cells)
 end
 
+function read_jlcells(url::String)
+
+end
+
 function read_jl(uri::String)
     readin = read(uri, String)
     if contains("═╡", readin)
         return(read_plto(uri))
     end
+    if contains("#==output", readin)
+        return(read_jlcells(uri))
+    end
     finals::Vector{String} = Vector{String}()
     concat::String = ""
-    for line in readlines(uri)
+    for line in split(read(uri, String), "\n")
         if line == ""
+            push!(finals, concat)
+            concat = ""
+        elseif line == "end"
             push!(finals, concat)
             concat = ""
         else

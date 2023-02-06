@@ -11,11 +11,53 @@ use module.
 """
 module IPy
 import Base: string, read, getindex
+using JSON
 
 __precompile__()
+
+
 abstract type AbstractCell end
-include("IPyCells.jl")
+
+"""
+## Cell(::Any, ::String, ::Any, ::Dict, ::Integer)
+The cell type is just a Julian equivalent to the JSON data that is read in
+for Jupyter cells.
+### fields
+- id::String
+- outputs::Any - Output of the cell
+- ctype::String - Cell type (code/md)
+- cont::Any - The content of the cell
+- n::Integer - The execution position of the cell.
+### Constructors
+- Cell(n::Int64, type::String, content::String, outputs::Any = "") Constructs cells from a dictionary of cell-data.
+"""
+mutable struct Cell{T} <: AbstractCell
+        id::String
+        type::String
+        source::String
+        outputs::Any
+        n::Integer
+        function Cell(n::Int64, type::String, content::String,
+                outputs::Any = "")
+                Random.seed!( rand(1:100000) )
+                id::String = randstring(10)::String
+            new{Symbol(type)}(id, type, content, outputs, n)::Cell{<:Any}
+        end
+end
+
+function string(cell::Cell{:code})
+        (cell.source * "\n#==output$(cell.n)\n$(cell.outputs)\n==#\n")::String
+end
+
+function string(cell::Cell{:md})
+        "\"\"\"\n$(cell.source)\n\"\"\""::String
+end
+
+function getindex(v::Vector{Cell{<:Any}}, s::String)
+        v[findall(c -> c.id == s, v)[1]]
+end
+
 include("IPyRW.jl")
 
-export ipynbjl, open, save
+export ipynbjl
 end # module
