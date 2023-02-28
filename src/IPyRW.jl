@@ -31,7 +31,35 @@ function read_plto(uri::String)
 end
 
 function read_jlcells(url::String)
-
+    finals::Vector{String} = Vector{String}()
+    outputs::Vector{String} = Vector{String}()
+    concat::String = ""
+    output::Bool = false
+    for line in split(read(uri, String), "\n")
+        if output
+            if line == "==#"
+                push!(outputs, concat)
+                concat = ""
+                output = false
+            else
+                output = output * line
+            end
+        end
+        if line == ""
+            push!(finals, concat)
+            concat = ""
+        elseif line == "end"
+            push!(finals, concat)
+            concat = ""
+        elseif contains(line, "#==output")
+            push!(finals, concat)
+            concat = ""
+            output = true
+        else
+            concat = concat * "\n" * line
+        end
+    end
+    [Cell(n, "code", s) for (n, s, o) in enumerate(zip(finals, output))]::AbstractVector
 end
 
 function read_jl(uri::String)
@@ -44,7 +72,7 @@ function read_jl(uri::String)
     end
     finals::Vector{String} = Vector{String}()
     concat::String = ""
-    for line in split(read(uri, String), "\n")
+    for line in split(read(uri, String), "\n"))
         if line == ""
             push!(finals, concat)
             concat = ""
@@ -64,8 +92,8 @@ Converts an array of Cell types into text.
 """
 function save_jl(cells::Vector{AbstractCell}, path::String)
     open(path, "w") do file
-            output::String = join([string(cell) for cell in cells])
-           write(file, output)
+        output::String = join([string(cell, "\n") for cell in cells])
+        write(file, output)
     end
 end
 
@@ -86,7 +114,7 @@ function read_ipynb(f::String)
     end for (n, cell) in enumerate(j["cells"])]::AbstractVector
 end
 
-
+write(io::IO, c::AbstractCell) = write(io, string(cell))
 
 """
 ## ipynbjl(ipynb_path::String, output_path::String)
