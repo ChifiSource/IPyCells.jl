@@ -72,7 +72,7 @@ function read_jl(uri::String)
     end
     finals::Vector{String} = Vector{String}()
     concat::String = ""
-    for line in split(read(uri, String), "\n"))
+    for line in split(read(uri, String), "\n")
         if line == ""
             push!(finals, concat)
             concat = ""
