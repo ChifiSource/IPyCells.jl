@@ -21,13 +21,11 @@ function read_plto(uri::String)
     cells::Vector{Cell} = []
     cellpos = plto_cell_lines(uri)
     x = readlines(uri)
-    for (n, cell) in enumerate(values(cellpos))
+    [begin
         unprocessed_uuid = x[cell[1]]
         text_data = x[cell[2:end]]
-        cl = Cell(n, "code", text_data)
-        push!(cells, cl)
-    end
-    return(cells)
+        Cell(n, "code", text_data)
+    end for (n, cell) in enumerate(values(cellpos))]
 end
 
 function read_jlcells(url::String)
@@ -35,30 +33,7 @@ function read_jlcells(url::String)
     outputs::Vector{String} = Vector{String}()
     concat::String = ""
     output::Bool = false
-    for line in split(read(uri, String), "\n")
-        if output
-            if line == "==#"
-                push!(outputs, concat)
-                concat = ""
-                output = false
-            else
-                output = output * line
-            end
-        end
-        if line == ""
-            push!(finals, concat)
-            concat = ""
-        elseif line == "end"
-            push!(finals, concat)
-            concat = ""
-        elseif contains(line, "#==output")
-            push!(finals, concat)
-            concat = ""
-            output = true
-        else
-            concat = concat * "\n" * line
-        end
-    end
+    lines = split(read(uri, String), "\n\n")
     [Cell(n, "code", s) for (n, s, o) in enumerate(zip(finals, output))]::AbstractVector
 end
 
@@ -70,20 +45,8 @@ function read_jl(uri::String)
     if contains("#==output", readin)
         return(read_jlcells(uri))
     end
-    finals::Vector{String} = Vector{String}()
-    concat::String = ""
-    for line in split(read(uri, String), "\n")
-        if line == ""
-            push!(finals, concat)
-            concat = ""
-        elseif line == "end"
-            push!(finals, concat)
-            concat = ""
-        else
-            concat = concat * "\n" * line
-        end
-    end
-    [Cell(n, "code", s) for (n, s) in enumerate(finals)]::AbstractVector
+    lines = split(readin, "\n\n")
+    [Cell(n, "code", string(s)) for (n, s) in enumerate(lines)]::AbstractVector
 end
 
 """

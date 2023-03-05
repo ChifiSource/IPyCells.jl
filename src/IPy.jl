@@ -49,11 +49,15 @@ mutable struct Cell{T} <: AbstractCell
 end
 
 function string(cell::Cell{:code})
-        (cell.source * "\n#==output$(cell.n)\n$(cell.outputs)\n==#\n")::String
+        (cell.source * "\n#==output$(cell.n)\n$(cell.type)\n$(cell.outputs)\n==#\n")::String
 end
 
 function string(cell::Cell{:md})
-        "\"\"\"\n$(cell.source)\n\"\"\""::String
+        "\"\"\"\n$(cell.source)\n\"\"\"\n"::String
+end
+
+function string(cell::Cell{:doc})
+        "\"\"\"\n$(cell.source)\n\"\"\""
 end
 
 function getindex(v::Vector{Cell{<:Any}}, s::String)
