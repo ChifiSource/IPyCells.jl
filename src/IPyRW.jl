@@ -24,25 +24,29 @@ function read_plto(uri::String)
     [begin
         unprocessed_uuid = x[cell[1]]
         text_data = x[cell[2:end]]
-        Cell(n, "code", text_data)
+        Cell(n, "code", string(text_data))
     end for (n, cell) in enumerate(values(cellpos))]
 end
 
-function read_jlcells(url::String)
-    finals::Vector{String} = Vector{String}()
-    outputs::Vector{String} = Vector{String}()
-    concat::String = ""
-    output::Bool = false
+function read_jlcells(uri::String)
     lines = split(read(uri, String), "\n\n")
-    [Cell(n, "code", s) for (n, s, o) in enumerate(zip(finals, output))]::AbstractVector
+    [begin
+        outpfirst = findfirst("#==output", s)
+        ctypeend = findnext("]", s, maximum(outpfirst))[1]
+        celltype = s[maximum(outpfirst) + 2:ctypeend - 1]
+        outp = s[ctypeend + 2:findnext("==#", s, ctypeend)[1] - 1]
+        inp = s[1:outpfirst[1] - 2]
+        println(celltype)
+        Cell(n, string(celltype), string(inp), string(outp))
+    end for (n, s) in enumerate(lines)]::AbstractVector
 end
 
 function read_jl(uri::String)
     readin = read(uri, String)
-    if contains("═╡", readin)
+    if contains(readin, "═╡")
         return(read_plto(uri))
     end
-    if contains("#==output", readin)
+    if contains(readin, "#==output[")
         return(read_jlcells(uri))
     end
     lines = split(readin, "\n\n")
@@ -53,9 +57,9 @@ end
 ## cells_to_string(::Vector{Any}) -> ::String
 Converts an array of Cell types into text.
 """
-function save_jl(cells::Vector{AbstractCell}, path::String)
+function save(cells::Vector{<:AbstractCell}, path::String)
     open(path, "w") do file
-        output::String = join([string(cell, "\n") for cell in cells])
+        output::String = join([string(cell) * "\n" for cell in cells])
         write(file, output)
     end
 end
@@ -76,8 +80,6 @@ function read_ipynb(f::String)
         Cell(n, ctype, source, outputs)
     end for (n, cell) in enumerate(j["cells"])]::AbstractVector
 end
-
-write(io::IO, c::AbstractCell) = write(io, string(cell))
 
 """
 ## ipynbjl(ipynb_path::String, output_path::String)
