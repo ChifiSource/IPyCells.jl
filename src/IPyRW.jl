@@ -31,13 +31,16 @@ end
 function read_jlcells(uri::String)
     lines = split(read(uri, String), "\n\n")
     [begin
-        outpfirst = findfirst("#==output", s)
-        ctypeend = findnext("]", s, maximum(outpfirst))[1]
-        celltype = s[maximum(outpfirst) + 2:ctypeend - 1]
-        outp = s[ctypeend + 2:findnext("==#", s, ctypeend)[1] - 1]
-        inp = s[1:outpfirst[1] - 2]
-        println(celltype)
-        Cell(n, string(celltype), string(inp), string(outp))
+        if contains(line, "#==output")
+            outpfirst = findfirst("#==output", s)
+            ctypeend = findnext("]", s, maximum(outpfirst))[1]
+            celltype = s[maximum(outpfirst) + 2:ctypeend - 1]
+            outp = s[ctypeend + 2:findnext("==#", s, ctypeend)[1] - 1]
+            inp = s[1:outpfirst[1] - 2]
+            Cell(n, string(celltype), string(inp), string(outp))
+        else
+            Cell(n, "code", s)
+        end
     end for (n, s) in enumerate(lines)]::AbstractVector
 end
 
