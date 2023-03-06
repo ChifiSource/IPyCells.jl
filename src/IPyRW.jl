@@ -31,7 +31,7 @@ end
 function read_jlcells(uri::String)
     lines = split(read(uri, String), "\n\n")
     [begin
-        if contains(line, "#==output")
+        if contains(s, "#==output")
             outpfirst = findfirst("#==output", s)
             ctypeend = findnext("]", s, maximum(outpfirst))[1]
             celltype = s[maximum(outpfirst) + 2:ctypeend - 1]
@@ -65,6 +65,11 @@ function save(cells::Vector{<:AbstractCell}, path::String)
         output::String = join([string(cell) * "\n" for cell in cells])
         write(file, output)
     end
+end
+
+function save_ipynb(cells::Vector{<:AbstractCell}, path::String)
+    file::String = read(path, String)
+
 end
 
 """
