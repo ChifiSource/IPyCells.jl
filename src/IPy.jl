@@ -49,7 +49,11 @@ mutable struct Cell{T} <: AbstractCell
 end
 
 function string(cell::Cell{:code})
-        (cell.source * "\n#==output[$(cell.type)]\n$(string(cell.outputs))\n==#\n")::String
+        if cell.source != ""
+                return(*(cell.source,
+                "\n#==output[$(cell.type)]\n$(string(cell.outputs))\n==#\n#==|||==#\n"))::String
+        end
+        ""::String
 end
 
 function string(cell::Cell{:md})

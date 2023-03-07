@@ -29,17 +29,21 @@ function read_plto(uri::String)
 end
 
 function read_jlcells(uri::String)
-    lines = split(read(uri, String), "\n\n")
+    lines = split(read(uri, String), "#==|||==#")
     [begin
         if contains(s, "#==output")
             outpfirst = findfirst("#==output", s)
             ctypeend = findnext("]", s, maximum(outpfirst))[1]
             celltype = s[maximum(outpfirst) + 2:ctypeend - 1]
-            outp = s[ctypeend + 2:findnext("==#", s, ctypeend)[1] - 1]
+            outpend = findnext("==#", s, outpfirst[1])
+            outp = ""
+            if ~(isnothing(outpend))
+                outp = s[ctypeend + 2:outpend[1] - 1]
+            end
             inp = s[1:outpfirst[1] - 2]
             Cell(n, string(celltype), string(inp), string(outp))
         else
-            Cell(n, "code", s)
+            Cell(n, "code", string(s))
         end
     end for (n, s) in enumerate(lines)]::AbstractVector
 end
@@ -49,7 +53,7 @@ function read_jl(uri::String)
     if contains(readin, "═╡")
         return(read_plto(uri))
     end
-    if contains(readin, "#==output[")
+    if contains(readin, "#==output[") && contains(readin, "#==|||==#")
         return(read_jlcells(uri))
     end
     lines = split(readin, "\n\n")
