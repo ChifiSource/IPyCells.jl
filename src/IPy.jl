@@ -16,18 +16,26 @@ using Random
 
 __precompile__()
 
-
+"""
+### abstract type AbstractCell
+An abstracted cell type, primarily used for the IPy.Cell constructor.
+##### Consistencies
+- id::String
+- source::String
+- outputs::Any
+- n::Int64
+"""
 abstract type AbstractCell end
 
 """
-## Cell(::Any, ::String, ::Any, ::Dict, ::Integer)
+## Cell(::Any, ::String, ::Any, ::Dict, ::Integer) <: AbstractCell
 The cell type is just a Julian equivalent to the JSON data that is read in
 for Jupyter cells.
 ### fields
 - id::String
 - outputs::Any - Output of the cell
-- ctype::String - Cell type (code/md)
-- cont::Any - The content of the cell
+- type::String - Cell type (code/md)
+- source::String - The content of the cell
 - n::Integer - The execution position of the cell.
 ### Constructors
 - Cell(n::Int64, type::String, content::String, outputs::Any = "") Constructs cells from a dictionary of cell-data.
@@ -37,7 +45,7 @@ mutable struct Cell{T} <: AbstractCell
         type::String
         source::String
         outputs::Any
-        n::Integer
+        n::Int64
         function Cell(n::Int64, type::String, content::String,
                 outputs::Any = ""; id::String = "")
                 if id == ""
@@ -48,7 +56,15 @@ mutable struct Cell{T} <: AbstractCell
         end
 end
 
-function string(cell::Cell{:code})
+"""
+## string(cell::Cell{<:Any}) -> ::String
+Converts a cell to a `String`, used by `IPy.save` to write different cell types.
+### example
+```julia
+cells = read_plto("myfile.jl")
+```
+"""
+function string(cell::Cell{<:Any})
         if cell.source != ""
                 return(*(cell.source,
                 "\n#==output[$(cell.type)]\n$(string(cell.outputs))\n==#\n#==|||==#\n"))::String
@@ -57,7 +73,7 @@ function string(cell::Cell{:code})
 end
 
 function string(cell::Cell{:md})
-        "\"\"\"\n$(cell.source)\n\"\"\"\n"::String
+        "\"\"\"$(cell.source)\"\"\"\n#==|||==#\n"::String
 end
 
 function string(cell::Cell{:doc})
