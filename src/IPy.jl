@@ -9,7 +9,7 @@ IPy.jl is a consistent cell format amongst three different cell file-types. The
 package combines .ipynb, .jl, and .jl pluto files together into one easy to
 use module.
 """
-module IPy
+module IPyCells
 import Base: string, read, getindex
 using JSON
 using Random

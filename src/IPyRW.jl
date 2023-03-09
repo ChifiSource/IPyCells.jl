@@ -59,7 +59,8 @@ function read_jlcells(uri::String)
             inp = s[1:outpfirst[1] - 2]
             Cell(n, string(celltype), string(inp), string(outp))
         elseif contains(s, "\"\"\"")
-            if contains(s[2:4], "\"\"\"") && contains(s[length(s) - 4:length(s) - 1], "\"\"\"")
+            rp = replace(s, "\n" => "")
+            if contains(rp[1:3], "\"\"\"") && contains(rp[length(rp) - 4:length(rp)], "\"\"\"")
                 inp = replace(s, "\"\"\"" => "")
                 Cell(n, "markdown", string(inp))
             else
