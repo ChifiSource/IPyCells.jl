@@ -72,7 +72,7 @@ function string(cell::Cell{<:Any})
         ""::String
 end
 
-function string(cell::Cell{:md})
+function string(cell::Cell{:markdown})
         "\"\"\"$(cell.source)\"\"\"\n#==|||==#\n"::String
 end
 
