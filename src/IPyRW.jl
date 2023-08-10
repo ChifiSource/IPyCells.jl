@@ -44,8 +44,8 @@ Reads in an `IPy.save` saved Julia file.
 cells = read_jlcells("myfile.jl")
 ```
 """
-function read_jlcells(uri::String)
-    lines = split(read(uri, String), "#==|||==#")
+function jlcells(str::String)
+    lines = split(str, "#==|||==#")
     [begin
         if contains(s, "#==output")
             outpfirst = findfirst("#==output", s)
@@ -71,6 +71,8 @@ function read_jlcells(uri::String)
         end
     end for (n, s) in enumerate(lines)]::AbstractVector
 end
+
+read_jlcells(path::String) = jlcells(read(path, String))
 
 """
 ## read_jl(path::String) -> ::Vector{<:AbstractCell}
