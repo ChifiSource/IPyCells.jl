@@ -42,17 +42,14 @@ for Jupyter cells.
 """
 mutable struct Cell{T} <: AbstractCell
         id::String
-        type::String
         source::String
         outputs::Any
-        n::Int64
-        function Cell(n::Int64, type::String, content::String,
-                outputs::Any = ""; id::String = "")
+        function Cell{T}(source::String = "", outputs::Any = ""; id::String = "")
                 if id == ""
                         Random.seed!(rand(1:100000))
                         id = randstring(10)::String
                 end
-            new{Symbol(type)}(id, type, content, outputs, n)::Cell{<:Any}
+            new{Symbol(type)}(id, content, outputs)::Cell{<:Any}
         end
 end
 
@@ -66,8 +63,9 @@ cells = read_plto("myfile.jl")
 """
 function string(cell::Cell{<:Any})
         if cell.source != ""
+                celltype = typeof(cell).parameters[1]
                 return(*(cell.source,
-                "\n#==output[$(cell.type)]\n$(string(cell.outputs))\n==#\n#==|||==#\n"))::String
+                "\n#==output[$celltype]\n$(string(cell.outputs))\n==#\n#==|||==#\n"))::String
         end
         ""::String
 end
@@ -75,7 +73,7 @@ end
 function string(cell::Cell{:markdown})
         "\"\"\"$(cell.source)\"\"\"\n#==|||==#\n"::String
 end
-
+type::String
 function string(cell::Cell{:doc})
         "\"\"\"\n$(cell.source)\n\"\"\""
 end

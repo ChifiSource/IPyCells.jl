@@ -1,3 +1,9 @@
+struct NotebookFormatError <: Exception
+    format::String
+    message::String
+    uri::String
+end
+
 
 function plto_cell_lines(uri::String)
     cellpos = Dict()
@@ -36,20 +42,21 @@ function read_plto(uri::String)
     end for (n, cell) in enumerate(values(cellpos))]
 end
 
+
+read_olive(uri::String) = parse_olive(read(uri, String))
+
 """
-## read_jlcells(path::String) -> ::Vector{<:AbstractCell}
-Reads in an `IPy.save` saved Julia file.
-### example
-```julia
-cells = read_jlcells("myfile.jl")
-```
+
 """
-function jlcells(str::String)
+function parse_olive(str::String)
     lines = split(str, "#==|||==#")
     [begin
         if contains(s, "#==output")
             outpfirst = findfirst("#==output", s)
             ctypeend = findnext("]", s, maximum(outpfirst))[1]
+            if isnothing(outpfirst) || isnothing(ctypeend)
+                throw("")
+            end
             celltype = s[maximum(outpfirst) + 2:ctypeend - 1]
             outpend = findnext("==#", s, outpfirst[1])
             outp = ""
@@ -57,22 +64,19 @@ function jlcells(str::String)
                 outp = s[ctypeend + 2:outpend[1] - 1]
             end
             inp = s[1:outpfirst[1] - 2]
-            Cell(n, string(celltype), string(inp), string(outp))
+            Cell(string(celltype), string(inp), string(outp))
         elseif contains(s, "\"\"\"")
             rp = replace(s, "\n" => "")
             if contains(rp[1:3], "\"\"\"") && contains(rp[length(rp) - 4:length(rp)], "\"\"\"")
-                inp = replace(s, "\"\"\"" => "")
-                Cell(n, "markdown", string(inp))
+                Cell("markdown", replace(s, "\"\"\"" => ""))
             else
-                Cell(n, "code", string(s))
+                Cell("code", string(s))
             end
         else
-            Cell(n, "code", string(s))
+            Cell("code", string(s))
         end
-    end for (n, s) in enumerate(lines)]::AbstractVector
+    end for s in lines]::Vector{Cell}
 end
-
-read_jlcells(path::String) = jlcells(read(path, String))
 
 """
 ## read_jl(path::String) -> ::Vector{<:AbstractCell}
@@ -87,13 +91,23 @@ cells = read_jl("myfile.jl")
 """
 function read_jl(uri::String)
     readin = read(uri, String)
+    # pluto
     if contains(readin, "═╡")
         return(read_plto(uri))
+    # olive
+    elseif contains(readin, "#==output[") && contains(readin, "#==|||==#")
+        return(read_olive(uri))
     end
-    if contains(readin, "#==output[") && contains(readin, "#==|||==#")
-        return(read_jlcells(uri))
-    end
+    # regular Julia:
     lines = split(readin, "\n\n")
+    parsing = true
+    while parsing
+        nextbegin = findnext("")
+        if isnothing(nextbegin)
+            break
+        end
+
+    end
     [Cell(n, "code", string(s)) for (n, s) in enumerate(lines)]::AbstractVector
 end
 
