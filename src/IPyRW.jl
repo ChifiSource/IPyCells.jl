@@ -1,15 +1,9 @@
-struct NotebookFormatError <: Exception
-    format::String
-    message::String
-    uri::String
-end
 
-
-function plto_cell_lines(uri::String)
-    cellpos = Dict()
+function plto_cell_lines(raw::String)
+    cellpos = Dict{Int64, UnitRange{Int64}}()
     first = 0
     ccount = 0
-    for (count, line) in enumerate(readlines(uri))
+    for (count, line) in enumerate(split(raw, "\n"))
         if occursin("# ╔═╡", line)
             if first == 0
                 first = count
@@ -31,17 +25,17 @@ Reads a pluto file into IPy cells.
 cells = read_plto("myfile.jl")
 ```
 """
-function read_plto(uri::String)
-    cells::Vector{Cell} = []
+function parse_pluto(raw::String)
     cellpos = plto_cell_lines(uri)
-    x = readlines(uri)
+    x = split(raw, "\n")
     [begin
         unprocessed_uuid = x[cell[1]]
         text_data = x[cell[2:end]]
-        Cell(n, "code", string(text_data))
-    end for (n, cell) in enumerate(values(cellpos))]
+        Cell("code", string(text_data))
+    end for cell in values(cellpos)]::Vector
 end
 
+read_pluto(uri::String) = parse_pluto(read(uri, String))
 
 read_olive(uri::String) = parse_olive(read(uri, String))
 
@@ -90,25 +84,43 @@ cells = read_jl("myfile.jl")
 ```
 """
 function read_jl(uri::String)
-    readin = read(uri, String)
+    readin::String = read(uri, String)
     # pluto
     if contains(readin, "═╡")
-        return(read_plto(uri))
+        return(parse_plto(readin))::String
     # olive
     elseif contains(readin, "#==output[") && contains(readin, "#==|||==#")
-        return(read_olive(uri))
+        return(parse_olive(readin))::String
     end
+    parse_julia(readin)::String
+end
+
+function parse_julia(raw::String)
     # regular Julia:
-    lines = split(readin, "\n\n")
-    parsing = true
-    while parsing
-        nextbegin = findnext("")
-        if isnothing(nextbegin)
+    at::Int64 = 1
+    textpos::Int64 = 1
+    cells::Vector{Cell} = Vector{Cell}()
+    while true
+        nextend = findnext("end", readin, at)
+        if isnothing(nextend)
+            n::Int64 = length(raw)
+            if at != n && at - 1 != n
+                push!(cells, Cell{:code}(raw[textpos:length(raw)]))
+            end
             break
         end
-
+        section::String = raw[at:nextend]
+        at = maximum(nextend)
+        if contains(section, "function") || contains(section, "do") || contains(section, "module") || contains(section, "else")
+            continue
+        elseif contains(section, "begin") || contains(section, "for") || contains(section, "if") || contains(section, "elseif")
+            continue
+        end
+        ne_max::Int64 = maximum(nextend)
+        push!(cells, Cell{:code}(raw[textpos:ne_max]))
+        textpos = ne_max
     end
-    [Cell(n, "code", string(s)) for (n, s) in enumerate(lines)]::AbstractVector
+    cells::Vector{Cell}
 end
 
 """
@@ -139,31 +151,13 @@ save(cells, "myfile.jl")
 ```
 """
 function save_ipynb(cells::Vector{<:AbstractCell}, path::String)
-    newd = Dict{String, Any}("nbformat_minor" => 4, "nbformat" => 4)
-    newcells = Dict{String, Any}()
-    metadata = Dict{String, Any}()
-    lang_info = Dict{String, Any}("file_extension" => ".jl",
-    "mimetype" => "application/julia", "name" => "julia",
-    "version" => string(VERSION))
-    kern_spec = Dict{String, Any}("name" => "julia-$(split(string(VERSION), ".")[1:2])",
-    "display_name" => "Julia $(string(VERSION))", "language" => "julia")
-    push!(metadata, "language_info" => lang_info,
-    "kernelspec" => kern_spec)
-    ncells = Dict([begin
-        cell.n = e
-        outp = Dict{String, Any}("output_type" => "execute_result",
-        "data" => Dict{String, Any}("text/plain" => Any["$(cell.outputs)"]),
-        "metadata" => Dict{String, Any}(),
-        "execution_count" => cell.n)
-        cell.n => Dict(cell.n => Dict{String, Any}("execution_count" => cell.n,
-        "metadata" => Dict{String, Any}(), "source" => Any[cell.source],
-        "cell_type" => cell.type, "outputs" => outp))
+    data::Dict = Dict{String, Dict}("cells" => [begin
+        Dict("cell_type" => string(typeof(cell).parameters[1]), "execution_count" => string(e), 
+        id => cell.id, "metadata" = Dict(), "outputs" => "", source => cell.source)
     end for (e, cell) in enumerate(cells)])
-    push!(newd, "metadata" => metadata, "cells" => ncells)
-    open(path, "w") do io
-        JSON.print(io, newd)
+    open(path, "w") do o::IO
+        write(o, JSON.print(data))
     end
-    newd
 end
 
 """
