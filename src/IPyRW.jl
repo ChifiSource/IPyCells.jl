@@ -96,7 +96,6 @@ function read_jl(uri::String)
 end
 
 function parse_julia(raw::String)
-    # regular Julia:
     at::Int64 = 1
     textpos::Int64 = 1
     cells::Vector{Cell} = Vector{Cell}()
@@ -199,6 +198,9 @@ function ipyjl(ipynb_path::String, output_path::String)
     output = save(cells, output_path)
 end
 
+function jlipy(ipynb_path::String, output_path::String)
+
+end
 """
 ### sep(::Any) -> ::String
 ---
