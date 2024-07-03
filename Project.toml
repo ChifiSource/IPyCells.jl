@@ -1,7 +1,7 @@
 name = "IPyCells"
 uuid = "f2c63c6a-782d-45ad-850e-588fc6f0abf6"
 authors = ["emmac "]
-version = "0.2"
+version = "0.1.1"
 
 [deps]
 JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
