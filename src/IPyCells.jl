@@ -1,13 +1,47 @@
 """
 Created in April, 2022 by
 [chifi - an open source software dynasty.](https://github.com/orgs/ChifiSource)
-by team
-[odd-data](https://github.com/orgs/ChifiSource/teams/odd-data)
-This software is MIT-licensed.
-### IPy.jl
-IPy.jl is a consistent cell format amongst three different cell file-types. The
-package combines .ipynb, .jl, and .jl pluto files together into one easy to
-use module.
+- This software is MIT-licensed.
+### IPyCells.jl
+IPyCells is a multi-format cell-reader for Julia with parametric `Cell` types. This 
+package is able to read `.jl` (Pluto, Olive, and Julia) and `.ipynb` files into a `Vector{Cell}` as well as
+save them to a `.jl` or `.ipynb` file. There are also quick conversion methods for quickly converting 
+a `.ipynb` or `.jl` file.
+```julia
+using IPyCells: ipyjl, jlipy
+# ipython to julia:
+ipyjl("sourcefile.ipynb", "outputfile.jl")
+
+# julia back to ipython, using our output file.
+jlipy("outputfile.jl", "outputfile2.ipynb")
+```
+###### contents
+```julia
+# * means "exported"
+# Cells
+AbstractCell
+Cell*
+string(cell::Cell{<:Any})*
+string(cell::Cell{:markdown})*
+getindex(v::Vector{Cell{<:Any}}, s::String)*
+# RW
+plto_cell_lines(raw::String)
+parse_pluto(raw::String)
+read_pluto(uri::String)
+parse_olive(str::String)
+read_olive(uri::String)
+parse_julia(raw::String)
+# read JL discerns whether or not the `.jl` file is `Pluto` or `Olive`. It will work with any 
+#   `.jl` file and calls `parse_pluto`/`parse_olive`/`parse_julia`.
+read_jl(uri::String)
+# saves to `.jl` -- `Olive` cells by default. `raw` will enable regular Julia source cells.
+save(cells::Vector{<:AbstractCell}, path::String; raw::Bool = false)
+# saves to .ipynb for `IJulia`
+save_ipynb(cells::Vector{<:AbstractCell}, path::String)
+read_ipynb(f::String)
+ipyjl(ipynb_path::String, output_path::String)*
+jlipy(jl_path::String, output_path::String)*
+```
 """
 module IPyCells
 import Base: string, read, getindex
@@ -17,21 +51,22 @@ using Random
 __precompile__()
 
 """
-### abstract type AbstractCell
-An abstracted cell type, primarily used for the IPy.Cell constructor.
-##### Consistencies
+```julia
+abstract type AbstractCell
+```
+A `Cell` is a type created to hold cell-data for various different types of notebooks. 
+The largest consistencies amongst abstract cells is that they contain source, ID, and outputs --
+and are able to be indexed by ID.
 - id::String
 - source::String
 - outputs::Any
-- n::Int64
 """
 abstract type AbstractCell end
 
 """
-## Cell(::Any, ::String, ::Any, ::Dict, ::Integer) <: AbstractCell
-The cell type is just a Julian equivalent to the JSON data that is read in
-for Jupyter cells.
-### fields
+```julia
+Cell{T <: Any} <: AbstractCell
+```
 - id::String
 - outputs::Any - Output of the cell
 - type::String - Cell type (code/md)
@@ -80,5 +115,5 @@ end
 
 include("IPyRW.jl")
 
-export ipynbjl
+export ipyjl, jlipy
 end # module

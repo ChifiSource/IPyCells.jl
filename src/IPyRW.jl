@@ -18,12 +18,7 @@ function plto_cell_lines(raw::String)
 end
 
 """
-## read_plto(path::String) -> ::Vector{<:AbstractCell}
-Reads a pluto file into IPy cells.
-### example
-```julia
-cells = read_plto("myfile.jl")
-```
+
 """
 function parse_pluto(raw::String)
     cellpos = plto_cell_lines(uri)
@@ -36,8 +31,6 @@ function parse_pluto(raw::String)
 end
 
 read_pluto(uri::String) = parse_pluto(read(uri, String))
-
-read_olive(uri::String) = parse_olive(read(uri, String))
 
 """
 
@@ -72,28 +65,7 @@ function parse_olive(str::String)
     end for s in lines]::Vector{Cell}
 end
 
-"""
-## read_jl(path::String) -> ::Vector{<:AbstractCell}
-Reads in a Vector of cells from a Julia file. If the file is found to contain
-IPy style output,  this function will promptly redirect to `read_jlcells`. If
-the file is found to contain `Pluto` output, it will be redirected to
-`read_plto`.
-### example
-```julia
-cells = read_jl("myfile.jl")
-```
-"""
-function read_jl(uri::String)
-    readin::String = read(uri, String)
-    # pluto
-    if contains(readin, "═╡")
-        return(parse_plto(readin))::String
-    # olive
-    elseif contains(readin, "#==output[") && contains(readin, "#==|||==#")
-        return(parse_olive(readin))::String
-    end
-    parse_julia(readin)::String
-end
+read_olive(uri::String) = parse_olive(read(uri, String))
 
 function parse_julia(raw::String)
     at::Int64 = 1
@@ -122,32 +94,36 @@ function parse_julia(raw::String)
     cells::Vector{Cell}
 end
 
+function read_jl(uri::String)
+    readin::String = read(uri, String)
+    # pluto
+    if contains(readin, "═╡")
+        return(parse_plto(readin))::String
+    # olive
+    elseif contains(readin, "#==output[") && contains(readin, "#==|||==#")
+        return(parse_olive(readin))::String
+    end
+    parse_julia(readin)::String
+end
+
+
 """
-## save(cells::Vector{<:AbstractCell}, path::String) -> _
-Saves cells as Julia file.
-### example
-```julia
-cells = read_jl("myfile.jl")
-save(cells, "myfile.jl")
-```
+
 """
-function save(cells::Vector{<:AbstractCell}, path::String)
+function save(cells::Vector{<:AbstractCell}, path::String; raw::Bool = false)
+    output::String = ""
     open(path, "w") do file
-        output::String = join([string(cell) for cell in cells])
+        if raw
+            output::String = join((cell.source for cell in cells), "\n")
+        else
+            output::String = join(string(cell) for cell in cells)
+        end
         write(file, output)
     end
 end
 
 """
-## save_ipynb(cells::Vector{<:AbstractCell}, path::String) -> _
-Saves cells as IPython notebook file. **Note that as of right now, this currently
-breaks the IJulia reading of the file -- this will (hopefully) be fixed in future
-IPy releases**.
-### example
-```julia
-cells = read_jl("myfile.jl")
-save(cells, "myfile.jl")
-```
+
 """
 function save_ipynb(cells::Vector{<:AbstractCell}, path::String)
     data::Dict = Dict{String, Dict}("cells" => [begin
@@ -160,12 +136,7 @@ function save_ipynb(cells::Vector{<:AbstractCell}, path::String)
 end
 
 """
-## read_ipynb(f::String) -> ::Vector{Cell}
-Reads an IPython notebook into a vector of cells.
-### example
-```
-cells = read_ipynb("helloworld.ipynb")
-```
+
 """
 function read_ipynb(f::String)
     file::String = read(f, String)
@@ -198,26 +169,7 @@ function ipyjl(ipynb_path::String, output_path::String)
     output = save(cells, output_path)
 end
 
-function jlipy(ipynb_path::String, output_path::String)
-
-end
-"""
-### sep(::Any) -> ::String
----
-Separates and parses lines of individual cell content via an array of strings.
-Returns string of concetenated text. Basically, the goal of sep is to ignore
-n exit code inside of the document.
-### example
-```
-```
-"""
-function sep(content::Any)
-    total = string()
-    if length(content) == 0
-        return("")
-    end
-    for line in content
-        total = total * string(line)
-    end
-    total
+function jlipy(jl_path::String, output_path::String)
+    cells = read_jl(jl_path)
+    save_ipynb(cells, output_path)
 end
