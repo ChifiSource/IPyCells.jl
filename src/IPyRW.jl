@@ -1,4 +1,9 @@
-
+"""
+```julia
+plto_cell_lines(raw::String) -> ::Dict{Int64, UnitRange{Int64}}
+```
+Gets the cell positions from a `Pluto` `.jl` file. Used by `parse_pluto` to find lines to seek by.
+"""
 function plto_cell_lines(raw::String)
     cellpos = Dict{Int64, UnitRange{Int64}}()
     first = 0
@@ -18,7 +23,10 @@ function plto_cell_lines(raw::String)
 end
 
 """
-
+```julia
+parse_pluto(raw::String) -> ::Vector{Cell}
+```
+Parses the raw `String` read from a `Pluto` file into a `Vector` of `Cells`.
 """
 function parse_pluto(raw::String)
     cellpos = plto_cell_lines(uri)
@@ -30,10 +38,19 @@ function parse_pluto(raw::String)
     end for cell in values(cellpos)]::Vector
 end
 
+"""
+```julia
+read_pluto(uri::String) -> ::Vector{Cell}
+```
+Reads a `.jl` `Pluto` file from its `URI` into a `Vector{Cell}`
+"""
 read_pluto(uri::String) = parse_pluto(read(uri, String))
 
 """
-
+```julia
+parse_olive(str::String) -> ::Vector{Cell}
+```
+Parses `Olive` cell source from a `String` into a `Vector` of `Cells`.
 """
 function parse_olive(str::String)
     lines = split(str, "#==|||==#")
@@ -65,8 +82,20 @@ function parse_olive(str::String)
     end for s in lines]::Vector{Cell}
 end
 
+"""
+```julia
+read_olive(uri::String) -> ::Vector{Cell}
+```
+Reads a `.jl` `Olive` file from its `URI` into a `Vector{Cell}`.
+"""
 read_olive(uri::String) = parse_olive(read(uri, String))
 
+"""
+```julia
+parse_julia(uri::String) -> ::Vector{Cell}
+```
+
+"""
 function parse_julia(raw::String)
     at::Int64 = 1
     textpos::Int64 = 1
@@ -98,12 +127,12 @@ function read_jl(uri::String)
     readin::String = read(uri, String)
     # pluto
     if contains(readin, "═╡")
-        return(parse_plto(readin))::String
+        return(parse_plto(readin))::Vector{Cell}
     # olive
     elseif contains(readin, "#==output[") && contains(readin, "#==|||==#")
-        return(parse_olive(readin))::String
+        return(parse_olive(readin))::Vector{Cell}
     end
-    parse_julia(readin)::String
+    parse_julia(readin)::Vector{Cell}
 end
 
 
@@ -114,9 +143,9 @@ function save(cells::Vector{<:AbstractCell}, path::String; raw::Bool = false)
     output::String = ""
     open(path, "w") do file
         if raw
-            output::String = join((cell.source for cell in cells), "\n")
+            output = join((cell.source for cell in cells), "\n")
         else
-            output::String = join(string(cell) for cell in cells)
+            output = join(string(cell) for cell in cells)
         end
         write(file, output)
     end
@@ -128,7 +157,7 @@ end
 function save_ipynb(cells::Vector{<:AbstractCell}, path::String)
     data::Dict = Dict{String, Dict}("cells" => [begin
         Dict("cell_type" => string(typeof(cell).parameters[1]), "execution_count" => string(e), 
-        id => cell.id, "metadata" = Dict(), "outputs" => "", source => cell.source)
+        id => cell.id, "metadata" => Dict(), "outputs" => "", source => cell.source)
     end for (e, cell) in enumerate(cells)])
     open(path, "w") do o::IO
         write(o, JSON.print(data))
@@ -151,7 +180,7 @@ function read_ipynb(f::String)
                 outputs = join([v for v in values(cell["outputs"][1]["data"])])
             end ==#
         end
-        Cell(n, ctype, source, outputs)
+        Cell(ctype, source, outputs)
     end for (n, cell) in enumerate(j["cells"])]::AbstractVector
 end
 

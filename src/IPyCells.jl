@@ -72,8 +72,9 @@ Cell{T <: Any} <: AbstractCell
 - type::String - Cell type (code/md)
 - source::String - The content of the cell
 - n::Integer - The execution position of the cell.
-### Constructors
-- Cell(n::Int64, type::String, content::String, outputs::Any = "") Constructs cells from a dictionary of cell-data.
+```julia
+Cell{T}(source::String = "", outputs::Any = ""; id::String = "") where {T <: Any}
+```
 """
 mutable struct Cell{T <: Any} <: AbstractCell
     id::String
@@ -84,16 +85,23 @@ mutable struct Cell{T <: Any} <: AbstractCell
             Random.seed!(rand(1:100000))
             id = randstring(5)
         end
-        new{Symbol(type)}(id, content, outputs)::Cell{type}
+        new{Symbol(T)}(id, source, outputs)::Cell{T}
+    end
+    Cell(ctype::String = "code", source::String = "", outputs::Any = ""; id::String = "") = begin
+        Cell{Symbol(ctype)}(source, outputs, id = id)
     end
 end
 
 """
-## string(cell::Cell{<:Any}) -> ::String
-Converts a cell to a `String`, used by `IPy.save` to write different cell types.
+```julia
+string(cell::Cell{<:Any}) -> ::String
+```
+Converts a cell to a `String`. Used by `IPy.save` to write different cell types.
 ### example
 ```julia
 cells = read_plto("myfile.jl")
+
+cells_as_strings = join(string(cell) for cell in cells)
 ```
 """
 function string(cell::Cell{<:Any})
