@@ -155,12 +155,12 @@ end
 
 """
 function save_ipynb(cells::Vector{<:AbstractCell}, path::String)
-    data::Dict = Dict{String, Dict}("cells" => [begin
+    data::Dict = Dict("cells" => [begin
         Dict("cell_type" => string(typeof(cell).parameters[1]), "execution_count" => string(e), 
-        id => cell.id, "metadata" => Dict(), "outputs" => "", source => cell.source)
+        "id" => cell.id, "metadata" => Dict(), "outputs" => "", "source" => cell.source)
     end for (e, cell) in enumerate(cells)])
     open(path, "w") do o::IO
-        write(o, JSON.print(data))
+        JSON.print(o, data)
     end
 end
 
