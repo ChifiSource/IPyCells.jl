@@ -92,9 +92,9 @@ read_olive(uri::String) = parse_olive(read(uri, String))
 
 """
 ```julia
-parse_julia(uri::String) -> ::Vector{Cell}
+parse_julia(raw::String) -> ::Vector{Cell}
 ```
-
+Parses plain julia into a `Vector{Cell}`.
 """
 function parse_julia(raw::String)
     at::Int64 = 1
@@ -123,6 +123,14 @@ function parse_julia(raw::String)
     cells::Vector{Cell}
 end
 
+"""
+```julia
+read_jl(uri::String) -> ::Vector{Cell}
+```
+Reads a `.jl` file into a `Vector{Cell}`, whether or not that file is in 
+`Pluto` or `Olive` format or in plain Julia. All formats are distinguished 
+and read with this reader.
+"""
 function read_jl(uri::String)
     readin::String = read(uri, String)
     # pluto
@@ -137,7 +145,13 @@ end
 
 
 """
-
+```julia
+save(cells::Vector{<:AbstractCell}, path::String; raw::Bool = false) -> ::Nothing
+```
+Saves a `Vector{Cell}` as a new Julia file. By default, this will save into the 
+`Olive` format most readable by `IPyCells`; providing `raw` as `true` will 
+save as plain Julia text.
+- See also: `save_ipynb`, `read_jl`, `parse_olive`
 """
 function save(cells::Vector{<:AbstractCell}, path::String; raw::Bool = false)
     output::String = ""
@@ -151,6 +165,13 @@ function save(cells::Vector{<:AbstractCell}, path::String; raw::Bool = false)
     end
 end
 
+"""
+```julia
+save_ipynb(cells::Vector{<:AbstractCell}, path::String) -> ::Nothing
+```
+Saves a `Vector{Cell}` as an `IPython` notebook for `IJulia`.
+- See also: `save`, `read_jl`, `parse_olive`, `ipyjl`
+"""
 function save_ipynb(cells::Vector{<:AbstractCell}, path::String)
     cell_str = """{\n"cells": ["""
     cell_str = cell_str * join([begin
@@ -197,13 +218,18 @@ function save_ipynb(cells::Vector{<:AbstractCell}, path::String)
     end
     return
 end
-"""
 
+"""
+```julia
+read_ipynb(path::String) -> ::Vector{Cell}
+```
+Reads a `Vector{Cell}` in from a `.ipynb` notebook file.
+- See also: `save`, `read_jl`, `parse_olive`, `read_olive`, `save_ipynb`, `ipyjl`
 """
 function read_ipynb(f::String)
     file::String = read(f, String)
     j::Dict = JSON.parse(file)
-    [begin
+    Vector{Cell}([begin
         outputs = ""
         ctype = cell["cell_type"]
         source = string(join(cell["source"]))
@@ -214,24 +240,39 @@ function read_ipynb(f::String)
             end
         end
         Cell(ctype, source, outputs)
-    end for (n, cell) in enumerate(j["cells"])]::AbstractVector
+    end for (n, cell) in enumerate(j["cells"])])::Vector{Cell}
 end
 
 """
-## ipynbjl(ipynb_path::String, output_path::String)
-Reads notebook at **ipynb_path** and then outputs as .jl Julia file to
-**output_path**.
-### example
+```julia
+ipynbjl(ipynb_path::String, output_path::String) -> ::Nothing
 ```
+Reads notebook at **ipynb_path** and then outputs as .jl Julia file to
+**output_path**. The inverse of `jlipy`.
+### example
+```julia
 ipynbjl("helloworld.ipynb", "helloworld.jl")
 ```
 """
 function ipyjl(ipynb_path::String, output_path::String)
     cells = read_ipynb(ipynb_path)
     output = save(cells, output_path)
+    nothing::Nothing
 end
 
+"""
+```julia
+ipynbjl(jl_path::String, output_path::String) -> ::Nothing
+```
+Reads a Julia file at **jl_path** and then outputs as .ipynb notebook file to
+**output_path**. The inverse of `ipyjl`.
+### example
+```julia
+jlipy("helloworld.jl", "helloworld.ipynb")
+```
+"""
 function jlipy(jl_path::String, output_path::String)
     cells = read_jl(jl_path)
     save_ipynb(cells, output_path)
+    nothing::Nothing
 end

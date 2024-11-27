@@ -69,12 +69,11 @@ abstract type AbstractCell end
 Cell{T <: Any} <: AbstractCell
 ```
 - id::String
-- outputs::Any - Output of the cell
-- type::String - Cell type (code/md)
-- source::String - The content of the cell
-- n::Integer - The execution position of the cell.
+- source::String
+- outputs::Any
 ```julia
 Cell{T}(source::String = "", outputs::Any = ""; id::String = "") where {T <: Any}
+Cell(ctype::String = "code", source::String = "", outputs::Any = ""; id::String = "")
 ```
 """
 mutable struct Cell{T <: Any} <: AbstractCell
@@ -94,6 +93,8 @@ mutable struct Cell{T <: Any} <: AbstractCell
 end
 
 """
+IPyCells `Cell` `string` binding
+---
 ```julia
 string(cell::Cell{<:Any}) -> ::String
 ```
