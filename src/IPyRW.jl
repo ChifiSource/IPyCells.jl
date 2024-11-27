@@ -208,10 +208,10 @@ function read_ipynb(f::String)
         ctype = cell["cell_type"]
         source = string(join(cell["source"]))
         if "outputs" in keys(cell)
-       #==     if length(cell["outputs"][1]["data"]) > 0
-                println(cell["outputs"][1]["data"])
-                outputs = join([v for v in values(cell["outputs"][1]["data"])])
-            end ==#
+            cell_outputs = cell["outputs"]
+            if length(cell_outputs) > 0
+                outputs = first(cell_outputs[1]["data"])[2][1]
+            end
         end
         Cell(ctype, source, outputs)
     end for (n, cell) in enumerate(j["cells"])]::AbstractVector
