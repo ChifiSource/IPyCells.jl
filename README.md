@@ -10,7 +10,7 @@
   <h1>IPyCells</h1>
   </div>
 
-`IPyCells` provides parametric cell-based functionality, as well as readers and writers for different cell formats (Ipynb, JL), as well as offering the option to extend the cells via parametric typing.
+`IPyCells` provides parametric cell-based functionality, as well as readers and writers for different cell formats (Ipynb notebooks and three different types of Julia), as well as offering the option to extend the cells via parametric typing.
 - [adding](#adding)
 - [usage](#usage)
 - [contributing](#contributing)
