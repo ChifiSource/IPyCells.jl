@@ -151,19 +151,52 @@ function save(cells::Vector{<:AbstractCell}, path::String; raw::Bool = false)
     end
 end
 
-"""
-
-"""
 function save_ipynb(cells::Vector{<:AbstractCell}, path::String)
-    data::Dict = Dict("cells" => [begin
-        Dict("cell_type" => string(typeof(cell).parameters[1]), "execution_count" => string(e), 
-        "id" => cell.id, "metadata" => Dict(), "outputs" => "", "source" => cell.source)
-    end for (e, cell) in enumerate(cells)])
-    open(path, "w") do o::IO
-        JSON.print(o, data)
+    cell_str = """{\n"cells": ["""
+    cell_str = cell_str * join([begin
+        """{
+   "cell_type": "$(typeof(cell).parameters[1])",
+   "execution_count": 1,
+   "id": "$(UUIDs.uuid4())",
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "$(cell.outputs)"
+      ]
+     },
+     "execution_count": 1,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "$(cell.source)"
+   ]
+  }"""
+    end for cell in cells], ",")
+    open(path, "w") do o::IOStream
+        write(o, cell_str * """ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Julia 1.9.2",
+   "language": "julia",
+   "name": "julia-1.9"
+  },
+  "language_info": {
+   "file_extension": ".jl",
+   "mimetype": "application/julia",
+   "name": "julia",
+   "version": "1.9.2"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}""" )
     end
+    return
 end
-
 """
 
 """
@@ -175,7 +208,7 @@ function read_ipynb(f::String)
         ctype = cell["cell_type"]
         source = string(join(cell["source"]))
         if "outputs" in keys(cell)
-        #==    if length(cell["outputs"][1]["data"]) > 0
+       #==     if length(cell["outputs"][1]["data"]) > 0
                 println(cell["outputs"][1]["data"])
                 outputs = join([v for v in values(cell["outputs"][1]["data"])])
             end ==#

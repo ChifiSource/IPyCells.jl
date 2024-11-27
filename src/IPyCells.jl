@@ -1,7 +1,7 @@
 """
 Created in April, 2022 by
 [chifi - an open source software dynasty.](https://github.com/orgs/ChifiSource)
-- This software is MIT-licensed.
+- This softwcell.idare is MIT-licensed.
 ### IPyCells.jl
 IPyCells is a multi-format cell-reader for Julia with parametric `Cell` types. This 
 package is able to read `.jl` (Pluto, Olive, and Julia) and `.ipynb` files into a `Vector{Cell}` as well as
@@ -46,6 +46,7 @@ jlipy(jl_path::String, output_path::String)*
 module IPyCells
 import Base: string, read, getindex
 using JSON
+using UUIDs
 using Random
 
 __precompile__()
