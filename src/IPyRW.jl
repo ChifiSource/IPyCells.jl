@@ -42,7 +42,7 @@ function parse_pluto(raw::String)
         else
             Cell("code", text_data)
         end
-    end for cell in values(cellpos)]::Vector
+    end for cell in reverse([values(cellpos) ...])]::Vector
 end
 
 """
@@ -105,27 +105,20 @@ Parses plain julia into a `Vector{Cell}`.
 """
 function parse_julia(raw::String)
     at::Int64 = 1
-    textpos::Int64 = 1
     cells::Vector{Cell} = Vector{Cell}()
     while true
-        nextend = findnext("end", readin, at)
+        nextend = findnext("end", raw, at)
         if isnothing(nextend)
             n::Int64 = length(raw)
             if at != n && at - 1 != n
-                push!(cells, Cell{:code}(raw[textpos:length(raw)]))
+                push!(cells, Cell{:code}(raw[at:length(raw)]))
             end
             break
         end
-        section::String = raw[at:nextend]
-        at = maximum(nextend)
-        if contains(section, "function") || contains(section, "do") || contains(section, "module") || contains(section, "else")
-            continue
-        elseif contains(section, "begin") || contains(section, "for") || contains(section, "if") || contains(section, "elseif")
-            continue
-        end
-        ne_max::Int64 = maximum(nextend)
-        push!(cells, Cell{:code}(raw[textpos:ne_max]))
-        textpos = ne_max
+        nemax = maximum(nextend)
+        section::String = raw[at:nemax]
+        push!(cells, Cell{:code}(section))
+        at = nemax
     end
     cells::Vector{Cell}
 end
