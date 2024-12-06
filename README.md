@@ -3,8 +3,8 @@
   <img width = 300 src="https://github.com/ChifiSource/image_dump/blob/main/ipyjl/logo.png" >
   
   
-  [![version](https://juliahub.com/docs/Lathe/version.svg)](https://juliahub.com/ui/Packages/Lathe/6rMNJ)
-[![deps](https://juliahub.com/docs/Lathe/deps.svg)](https://juliahub.com/ui/Packages/Lathe/6rMNJ?t=2)
+[![version](https://juliahub.com/docs/General/IPyCells/stable/version.svg)](https://juliahub.com/ui/Packages/General/IPyCells)
+[![deps](https://juliahub.com/docs/General/IPyCells/stable/deps.svg)](https://juliahub.com/ui/Packages/General/IPyCells?t=2)
   </br>
   </br>
   <h1>IPyCells</h1>
