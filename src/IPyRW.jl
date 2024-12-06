@@ -29,12 +29,19 @@ parse_pluto(raw::String) -> ::Vector{Cell}
 Parses the raw `String` read from a `Pluto` file into a `Vector` of `Cells`.
 """
 function parse_pluto(raw::String)
-    cellpos = plto_cell_lines(uri)
+    cellpos = plto_cell_lines(raw)
     x = split(raw, "\n")
     [begin
         unprocessed_uuid = x[cell[1]]
         text_data = x[cell[2:end]]
-        Cell("code", string(text_data))
+        text_data = join(text_data, "\n")
+        if contains(text_data, "md\"")
+            start_text = findfirst("md\"\"\"", text_data)
+            nd_text = findnext("\"\"\"", text_data, maximum(start_text))
+            Cell("markdown", text_data[maximum(start_text) + 1:minimum(nd_text) - 1])
+        else
+            Cell("code", text_data)
+        end
     end for cell in values(cellpos)]::Vector
 end
 
