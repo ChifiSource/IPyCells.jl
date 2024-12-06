@@ -3,45 +3,63 @@
   <img width = 300 src="https://github.com/ChifiSource/image_dump/blob/main/ipyjl/logo.png" >
   
   
-  [![version](https://juliahub.com/docs/Lathe/version.svg)](https://juliahub.com/ui/Packages/Lathe/6rMNJ)
-[![deps](https://juliahub.com/docs/Lathe/deps.svg)](https://juliahub.com/ui/Packages/Lathe/6rMNJ?t=2)
-[![pkgeval](https://juliahub.com/docs/Lathe/pkgeval.svg)](https://juliahub.com/ui/Packages/Lathe/6rMNJ)
+[![version](https://juliahub.com/docs/General/IPyCells/stable/version.svg)](https://juliahub.com/ui/Packages/General/IPyCells)
+[![deps](https://juliahub.com/docs/General/IPyCells/stable/deps.svg)](https://juliahub.com/ui/Packages/General/IPyCells?t=2)
   </br>
   </br>
   <h1>IPyCells</h1>
   </div>
 
-`IPyCells` provides parametric cell-based functionality, as well as readers and writers for different cell formats (Ipynb, JL), as well as offering the option to extend the cells via parametric typing. This module provides
-###### cells
-- `AbstractCell`
-- `Cell(n::Int64, type::String, content::String, outputs::Any = ""; id::String = "")`
-- `string(Cell{<:Any})`
-- `string(cell::Cell{:md})`
-- `string(cell::Cell{:doc})`
-- `getindex(v::Vector{Cell{<:Any}}, s::String)`
-###### read/write
-- `read_plto(uri::String)`
-- `read_jlcells(uri::String)`
-- `read_jl(uri::String)`
-- `save(cells::Vector{<:AbstractCell}, path::String)`
-- `save_ipynb(cells::Vector{<:AbstractCell}, path::String)` (this **does not** work just right yet) cells are readable by Olive, not jupyter post-save.
-- `read_ipynb(f::String)`
-- `ipyjl(ipynb_path::String, output_path::String)`
-###### (internal)
-- `plto_cell_lines(uri::String)`
-- `sep(content::Any)`
+`IPyCells` provides parametric cell-based functionality, as well as readers and writers for different cell formats (Ipynb notebooks and three different types of Julia), as well as offering the option to extend the cells via parametric typing.
+- [adding](#adding)
+- [usage](#usage)
+- [contributing](#contributing)
+  - [guidelines](#guidelines)
 ### Adding
 ```julia
+julia> using Pkg; Pkg.add("IPyCells")
 julia> ]
 pkg> add IPyCells
 ```
 ### Usage
-There are many ways to use `IPyCells` -- This package could be used to convert Pluto notebooks into Olive notebooks, IPython notebooks into Julia notebooks. Currently, the ipynb save method will break your `.ipynb` files where IJulia cannot read them, [Olive](https://github.com/ChifiSource/Olive.jl) eventually this is planned to be fixed. Anyway, this package could be used to read any package and save it into (currently) ipynb or julia.
+Either `.ipynb` or `.jl` files may be read with this API. When reading Julia files, the reader will delinate which type of julia it is -- whether [Pluto](https://github.com/fonsp/Pluto.jl) cells, [Olive](https://github.com/ChifiSource/Olive.jl) cells, or just plain julia.
 ```julia
-ipynbjl("ipynbtestbook.ipynb", "example.jl")
+read_jl(uri::String)
+read_ipynb(f::String)
 ```
+The different forms of Julia all have their own parsers, which may be used independently to parse text:
 ```julia
-cells = read_ipynb
-save_jl(cells)
+parse_pluto(raw::String)
+parse_olive(str::String)
+parse_julia(raw::String)
 ```
-This preserves both the output and markdown. Alternatively, you could write functions around cells enabling for different cell types to be read by this reader.
+We can also call all of the read functions individually to get the same result from a file URI, rather than a String. `read` functions exist for `Olive`, `Pluto`, and `IPynb`, but not `parse_julia` directly -- in this case we would simply use `read_jl` -- both `Pluto` and `Olive` require pretty specific symbols, so it is pretty easy for the reader to tell if a file is `Olive`, `Pluto`, or regular Julia.
+```julia
+read_pluto(uri::String)
+read_olive(uri::String)
+```
+Cells can be saved with `save` for julia files and `save_ipynb` for ipynb files.
+```julia
+save(cells::Vector{<:AbstractCell}, path::String)
+save_ipynb(cells::Vector{<:AbstractCell}, path::String)
+```
+For quick conversions from Julia to nbformat or nbformat to Julia, there are `ipyjl` and `jlipy` respectively.
+```julia
+ipyjl(ipynb_path::String, output_path::String)
+jlipy(ipynb_path::String, output_path::String)
+```
+##### contributing
+There are several ways to contribute to `IPyCells` while also contributing to the greater lot of [chifi](https://github.com/ChifiSource) software.
+- simply using `IPyCells`
+- starring this project
+- forking this project [contributing guidelines](#guidelines)
+- participating in the community 🔴🟢🟣
+- supporting chifi creators
+- helping with other chifi projects
+#### guidelines
+When submitting issues or pull-requests, it is important to make sure of a few things. We are not super strict, but making sure of these few things will be helpful for maintainers!
+1. You have replicated the issue on `Unstable`
+2. The issue does not currently exist... or does not have a planned implementation different to your own. In these cases, please collaborate on the issue, express your idea and we will select the best choice.
+3. **Pull Request TO UNSTABLE**
+4. If you have a new issue, **open a new issue**. It is not best to comment your issue under an unrelated issue; even a case where you are experiencing that issue, if you want to mention **another issue**, open a **new issue**.
+5. Questions are fine, but **not** questions answered inside of this `README`.

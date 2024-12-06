@@ -1,9 +1,14 @@
-
-function plto_cell_lines(uri::String)
-    cellpos = Dict()
+"""
+```julia
+plto_cell_lines(raw::String) -> ::Dict{Int64, UnitRange{Int64}}
+```
+Gets the cell positions from a `Pluto` `.jl` file. Used by `parse_pluto` to find lines to seek by.
+"""
+function plto_cell_lines(raw::String)
+    cellpos = Dict{Int64, UnitRange{Int64}}()
     first = 0
     ccount = 0
-    for (count, line) in enumerate(readlines(uri))
+    for (count, line) in enumerate(split(raw, "\n"))
         if occursin("# ╔═╡", line)
             if first == 0
                 first = count
@@ -18,38 +23,51 @@ function plto_cell_lines(uri::String)
 end
 
 """
-## read_plto(path::String) -> ::Vector{<:AbstractCell}
-Reads a pluto file into IPy cells.
-### example
 ```julia
-cells = read_plto("myfile.jl")
+parse_pluto(raw::String) -> ::Vector{Cell}
 ```
+Parses the raw `String` read from a `Pluto` file into a `Vector` of `Cells`.
 """
-function read_plto(uri::String)
-    cells::Vector{Cell} = []
-    cellpos = plto_cell_lines(uri)
-    x = readlines(uri)
+function parse_pluto(raw::String)
+    cellpos = plto_cell_lines(raw)
+    x = split(raw, "\n")
     [begin
         unprocessed_uuid = x[cell[1]]
         text_data = x[cell[2:end]]
-        Cell(n, "code", string(text_data))
-    end for (n, cell) in enumerate(values(cellpos))]
+        text_data = join(text_data, "\n")
+        if contains(text_data, "md\"")
+            start_text = findfirst("md\"\"\"", text_data)
+            nd_text = findnext("\"\"\"", text_data, maximum(start_text))
+            Cell("markdown", text_data[maximum(start_text) + 1:minimum(nd_text) - 1])
+        else
+            Cell("code", text_data)
+        end
+    end for cell in reverse([values(cellpos) ...])]::Vector
 end
 
 """
-## read_jlcells(path::String) -> ::Vector{<:AbstractCell}
-Reads in an `IPy.save` saved Julia file.
-### example
 ```julia
-cells = read_jlcells("myfile.jl")
+read_pluto(uri::String) -> ::Vector{Cell}
 ```
+Reads a `.jl` `Pluto` file from its `URI` into a `Vector{Cell}`
 """
-function jlcells(str::String)
+read_pluto(uri::String) = parse_pluto(read(uri, String))
+
+"""
+```julia
+parse_olive(str::String) -> ::Vector{Cell}
+```
+Parses `Olive` cell source from a `String` into a `Vector` of `Cells`.
+"""
+function parse_olive(str::String)
     lines = split(str, "#==|||==#")
     [begin
         if contains(s, "#==output")
             outpfirst = findfirst("#==output", s)
             ctypeend = findnext("]", s, maximum(outpfirst))[1]
+            if isnothing(outpfirst) || isnothing(ctypeend)
+                throw("")
+            end
             celltype = s[maximum(outpfirst) + 2:ctypeend - 1]
             outpend = findnext("==#", s, outpfirst[1])
             outp = ""
@@ -57,157 +75,207 @@ function jlcells(str::String)
                 outp = s[ctypeend + 2:outpend[1] - 1]
             end
             inp = s[1:outpfirst[1] - 2]
-            Cell(n, string(celltype), string(inp), string(outp))
+            Cell(string(celltype), string(inp), string(outp))
         elseif contains(s, "\"\"\"")
             rp = replace(s, "\n" => "")
             if contains(rp[1:3], "\"\"\"") && contains(rp[length(rp) - 4:length(rp)], "\"\"\"")
-                inp = replace(s, "\"\"\"" => "")
-                Cell(n, "markdown", string(inp))
+                Cell("markdown", replace(s, "\"\"\"" => ""))
             else
-                Cell(n, "code", string(s))
+                Cell("code", string(s))
             end
         else
-            Cell(n, "code", string(s))
+            Cell("code", string(s))
         end
-    end for (n, s) in enumerate(lines)]::AbstractVector
+    end for s in lines]::Vector{Cell}
 end
 
-read_jlcells(path::String) = jlcells(read(path, String))
+"""
+```julia
+read_olive(uri::String) -> ::Vector{Cell}
+```
+Reads a `.jl` `Olive` file from its `URI` into a `Vector{Cell}`.
+"""
+read_olive(uri::String) = parse_olive(read(uri, String))
 
 """
-## read_jl(path::String) -> ::Vector{<:AbstractCell}
-Reads in a Vector of cells from a Julia file. If the file is found to contain
-IPy style output,  this function will promptly redirect to `read_jlcells`. If
-the file is found to contain `Pluto` output, it will be redirected to
-`read_plto`.
-### example
 ```julia
-cells = read_jl("myfile.jl")
+parse_julia(raw::String) -> ::Vector{Cell}
 ```
+Parses plain julia into a `Vector{Cell}`.
+"""
+function parse_julia(raw::String)
+    at::Int64 = 1
+    cells::Vector{Cell} = Vector{Cell}()
+    while true
+        nextend = findnext("end", raw, at)
+        if isnothing(nextend)
+            n::Int64 = length(raw)
+            if at != n && at - 1 != n
+                push!(cells, Cell{:code}(raw[at:length(raw)]))
+            end
+            break
+        end
+        nemax = maximum(nextend)
+        section::String = raw[at:nemax]
+        push!(cells, Cell{:code}(section))
+        at = nemax
+    end
+    cells::Vector{Cell}
+end
+
+"""
+```julia
+read_jl(uri::String) -> ::Vector{Cell}
+```
+Reads a `.jl` file into a `Vector{Cell}`, whether or not that file is in 
+`Pluto` or `Olive` format or in plain Julia. All formats are distinguished 
+and read with this reader.
 """
 function read_jl(uri::String)
-    readin = read(uri, String)
+    readin::String = read(uri, String)
+    # pluto
     if contains(readin, "═╡")
-        return(read_plto(uri))
+        return(parse_plto(readin))::Vector{Cell}
+    # olive
+    elseif contains(readin, "#==output[") && contains(readin, "#==|||==#")
+        return(parse_olive(readin))::Vector{Cell}
     end
-    if contains(readin, "#==output[") && contains(readin, "#==|||==#")
-        return(read_jlcells(uri))
-    end
-    lines = split(readin, "\n\n")
-    [Cell(n, "code", string(s)) for (n, s) in enumerate(lines)]::AbstractVector
+    parse_julia(readin)::Vector{Cell}
 end
 
+
 """
-## save(cells::Vector{<:AbstractCell}, path::String) -> _
-Saves cells as Julia file.
-### example
 ```julia
-cells = read_jl("myfile.jl")
-save(cells, "myfile.jl")
+save(cells::Vector{<:AbstractCell}, path::String; raw::Bool = false) -> ::Nothing
 ```
+Saves a `Vector{Cell}` as a new Julia file. By default, this will save into the 
+`Olive` format most readable by `IPyCells`; providing `raw` as `true` will 
+save as plain Julia text.
+- See also: `save_ipynb`, `read_jl`, `parse_olive`
 """
-function save(cells::Vector{<:AbstractCell}, path::String)
+function save(cells::Vector{<:AbstractCell}, path::String; raw::Bool = false)
+    output::String = ""
     open(path, "w") do file
-        output::String = join([string(cell) for cell in cells])
+        if raw
+            output = join((cell.source for cell in cells), "\n")
+        else
+            output = join(string(cell) for cell in cells)
+        end
         write(file, output)
     end
 end
 
 """
-## save_ipynb(cells::Vector{<:AbstractCell}, path::String) -> _
-Saves cells as IPython notebook file. **Note that as of right now, this currently
-breaks the IJulia reading of the file -- this will (hopefully) be fixed in future
-IPy releases**.
-### example
 ```julia
-cells = read_jl("myfile.jl")
-save(cells, "myfile.jl")
+save_ipynb(cells::Vector{<:AbstractCell}, path::String) -> ::Nothing
 ```
+Saves a `Vector{Cell}` as an `IPython` notebook for `IJulia`.
+- See also: `save`, `read_jl`, `parse_olive`, `ipyjl`
 """
 function save_ipynb(cells::Vector{<:AbstractCell}, path::String)
-    newd = Dict{String, Any}("nbformat_minor" => 4, "nbformat" => 4)
-    newcells = Dict{String, Any}()
-    metadata = Dict{String, Any}()
-    lang_info = Dict{String, Any}("file_extension" => ".jl",
-    "mimetype" => "application/julia", "name" => "julia",
-    "version" => string(VERSION))
-    kern_spec = Dict{String, Any}("name" => "julia-$(split(string(VERSION), ".")[1:2])",
-    "display_name" => "Julia $(string(VERSION))", "language" => "julia")
-    push!(metadata, "language_info" => lang_info,
-    "kernelspec" => kern_spec)
-    ncells = Dict([begin
-        cell.n = e
-        outp = Dict{String, Any}("output_type" => "execute_result",
-        "data" => Dict{String, Any}("text/plain" => Any["$(cell.outputs)"]),
-        "metadata" => Dict{String, Any}(),
-        "execution_count" => cell.n)
-        cell.n => Dict(cell.n => Dict{String, Any}("execution_count" => cell.n,
-        "metadata" => Dict{String, Any}(), "source" => Any[cell.source],
-        "cell_type" => cell.type, "outputs" => outp))
-    end for (e, cell) in enumerate(cells)])
-    push!(newd, "metadata" => metadata, "cells" => ncells)
-    open(path, "w") do io
-        JSON.print(io, newd)
+    cell_str = """{\n"cells": ["""
+    cell_str = cell_str * join([begin
+    reps = ("\\" => "\\\\", "\"" => "\\\"", "\n" => "\\n")
+    new_outputs = replace(cell.outputs, reps ...)
+    new_source = replace(cell.source, reps ...)
+        """{
+   "cell_type": "$(typeof(cell).parameters[1])",
+   "execution_count": 1,
+   "id": "$(UUIDs.uuid4())",
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "$(new_outputs)"
+      ]
+     },
+     "execution_count": 1,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "$(new_source)"
+   ]
+  }"""
+    end for cell in cells], ",")
+    open(path, "w") do o::IOStream
+        write(o, cell_str * """ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Julia 1.9.2",
+   "language": "julia",
+   "name": "julia-1.9"
+  },
+  "language_info": {
+   "file_extension": ".jl",
+   "mimetype": "application/julia",
+   "name": "julia",
+   "version": "1.9.2"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}""" )
     end
-    newd
+    return
 end
 
 """
-## read_ipynb(f::String) -> ::Vector{Cell}
-Reads an IPython notebook into a vector of cells.
-### example
+```julia
+read_ipynb(path::String) -> ::Vector{Cell}
 ```
-cells = read_ipynb("helloworld.ipynb")
-```
+Reads a `Vector{Cell}` in from a `.ipynb` notebook file.
+- See also: `save`, `read_jl`, `parse_olive`, `read_olive`, `save_ipynb`, `ipyjl`
 """
 function read_ipynb(f::String)
     file::String = read(f, String)
     j::Dict = JSON.parse(file)
-    [begin
+    Vector{Cell}([begin
         outputs = ""
         ctype = cell["cell_type"]
         source = string(join(cell["source"]))
         if "outputs" in keys(cell)
-        #==    if length(cell["outputs"][1]["data"]) > 0
-                println(cell["outputs"][1]["data"])
-                outputs = join([v for v in values(cell["outputs"][1]["data"])])
-            end ==#
+            cell_outputs = cell["outputs"]
+            if length(cell_outputs) > 0
+                outputs = first(cell_outputs[1]["data"])[2][1]
+            end
         end
-        Cell(n, ctype, source, outputs)
-    end for (n, cell) in enumerate(j["cells"])]::AbstractVector
+        Cell(ctype, source, outputs)
+    end for (n, cell) in enumerate(j["cells"])])::Vector{Cell}
 end
 
 """
-## ipynbjl(ipynb_path::String, output_path::String)
-Reads notebook at **ipynb_path** and then outputs as .jl Julia file to
-**output_path**.
-### example
+```julia
+ipynbjl(ipynb_path::String, output_path::String) -> ::Nothing
 ```
+Reads notebook at **ipynb_path** and then outputs as .jl Julia file to
+**output_path**. The inverse of `jlipy`.
+### example
+```julia
 ipynbjl("helloworld.ipynb", "helloworld.jl")
 ```
 """
 function ipyjl(ipynb_path::String, output_path::String)
     cells = read_ipynb(ipynb_path)
     output = save(cells, output_path)
+    nothing::Nothing
 end
 
 """
-### sep(::Any) -> ::String
----
-Separates and parses lines of individual cell content via an array of strings.
-Returns string of concetenated text. Basically, the goal of sep is to ignore
-n exit code inside of the document.
-### example
+```julia
+ipynbjl(jl_path::String, output_path::String) -> ::Nothing
 ```
+Reads a Julia file at **jl_path** and then outputs as .ipynb notebook file to
+**output_path**. The inverse of `ipyjl`.
+### example
+```julia
+jlipy("helloworld.jl", "helloworld.ipynb")
 ```
 """
-function sep(content::Any)
-    total = string()
-    if length(content) == 0
-        return("")
-    end
-    for line in content
-        total = total * string(line)
-    end
-    total
+function jlipy(jl_path::String, output_path::String)
+    cells = read_jl(jl_path)
+    save_ipynb(cells, output_path)
+    nothing::Nothing
 end
