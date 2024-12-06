@@ -8,7 +8,3 @@ my_function (generic function with 1 method)
 """# hello"""
 #==|||==#
 
-#==output[code]
-
-==#
-#==|||==#
