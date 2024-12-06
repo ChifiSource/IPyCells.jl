@@ -175,6 +175,9 @@ Saves a `Vector{Cell}` as an `IPython` notebook for `IJulia`.
 function save_ipynb(cells::Vector{<:AbstractCell}, path::String)
     cell_str = """{\n"cells": ["""
     cell_str = cell_str * join([begin
+    reps = ("\\" => "\\\\", "\"" => "\\\"", "\n" => "\\n")
+    new_outputs = replace(cell.outputs, reps ...)
+    new_source = replace(cell.source, reps ...)
         """{
    "cell_type": "$(typeof(cell).parameters[1])",
    "execution_count": 1,
@@ -184,7 +187,7 @@ function save_ipynb(cells::Vector{<:AbstractCell}, path::String)
     {
      "data": {
       "text/plain": [
-       "$(cell.outputs)"
+       "$(new_outputs)"
       ]
      },
      "execution_count": 1,
@@ -193,7 +196,7 @@ function save_ipynb(cells::Vector{<:AbstractCell}, path::String)
     }
    ],
    "source": [
-    "$(cell.source)"
+    "$(new_source)"
    ]
   }"""
     end for cell in cells], ",")

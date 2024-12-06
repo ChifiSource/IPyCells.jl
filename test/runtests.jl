@@ -3,6 +3,10 @@ using IPyCells: Cell
 using Test
 testbooks::String = "testbooks/"
 
+writer_cells = [Cell{:code}("""function example(x::Any)
+    println("hi")
+end"""), Cell{:markdown}("- hi"), Cell{:code}("println(\"hi\")")]
+
 @testset "ipy cells" verbose = true begin
     @testset "cells" begin
         newcell = Cell{:code}()
@@ -52,18 +56,31 @@ testbooks::String = "testbooks/"
     end
     @testset "writing" verbose = true begin
         @testset "olive" begin
-
+            olpath = testbooks * "output/julia.jl"
+            IPyCells.save(writer_cells, olpath)
+            @test isfile(olpath)
         end
         @testset "ipython" begin
-
+            IPyCells.save_ipynb(writer_cells, testbooks * "output/ipy.ipynb")
+            @test isfile(testbooks * "output/ipy.ipynb")
         end
     end
     @testset "reread" verbose = true begin
         @testset "olive" begin
-
+            olpath = testbooks * "output/julia.jl"
+            new_cells = IPyCells.read_jl(olpath)
+            @test length(new_cells) >= 3
+            @test typeof(new_cells[1]) == Cell{:code}
+            @test typeof(new_cells[2]) == Cell{:markdown}
+            @test contains(new_cells[3].source, "println")
         end
         @testset "ipython" begin
-
+            ippath = testbooks * "output/ipy.ipynb"
+            new_cells = IPyCells.read_ipynb(ippath)
+            @test length(new_cells) >= 3
+            @test typeof(new_cells[1]) == Cell{:code}
+            @test typeof(new_cells[2]) == Cell{:markdown}
+            @test contains(new_cells[3].source, "println")
         end
     end
 end
