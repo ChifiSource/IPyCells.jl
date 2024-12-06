@@ -33,6 +33,11 @@ parse_pluto(raw::String)
 parse_olive(str::String)
 parse_julia(raw::String)
 ```
+We can also call all of the read functions individually to get the same result from a file URI, rather than a String. `read` functions exist for `Olive`, `Pluto`, and `IPynb`, but not `parse_julia` directly -- in this case we would simply use `read_jl` -- both `Pluto` and `Olive` require pretty specific symbols, so it is pretty easy for the reader to tell if a file is `Olive`, `Pluto`, or regular Julia.
+```julia
+read_pluto(uri::String)
+read_olive(uri::String)
+```
 Cells can be saved with `save` for julia files and `save_ipynb` for ipynb files.
 ```julia
 save(cells::Vector{<:AbstractCell}, path::String)
