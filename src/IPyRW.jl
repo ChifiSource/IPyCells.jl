@@ -61,32 +61,36 @@ Parses `Olive` cell source from a `String` into a `Vector` of `Cells`.
 """
 function parse_olive(str::String)
     lines = split(str, "#==|||==#")
-    [begin
-        if contains(s, "#==output")
-            outpfirst = findfirst("#==output", s)
-            ctypeend = findnext("]", s, maximum(outpfirst))[1]
-            if isnothing(outpfirst) || isnothing(ctypeend)
-                throw("")
-            end
-            celltype = s[maximum(outpfirst) + 2:ctypeend - 1]
-            outpend = findnext("==#", s, outpfirst[1])
-            outp = ""
-            if ~(isnothing(outpend))
-                outp = s[ctypeend + 2:outpend[1] - 1]
-            end
-            inp = s[1:outpfirst[1] - 2]
-            Cell(string(celltype), string(inp), string(outp))
-        elseif contains(s, "\"\"\"")
-            rp = replace(s, "\n" => "")
-            if contains(rp[1:3], "\"\"\"") && contains(rp[length(rp) - 4:length(rp)], "\"\"\"")
-                Cell("markdown", replace(s, "\"\"\"" => ""))
+    Vector{Cell{<:Any}}(filter(x -> ~(isnothing(x)), [begin
+        if replace(s, " " => "", "\n" => "") == ""
+            nothing::Nothing
+        else
+            if contains(s, "#==output")
+                outpfirst = findfirst("#==output", s)
+                ctypeend = findnext("]", s, maximum(outpfirst))[1]
+                if isnothing(outpfirst) || isnothing(ctypeend)
+                    throw("")
+                end
+                celltype = s[maximum(outpfirst) + 2:ctypeend - 1]
+                outpend = findnext("==#", s, outpfirst[1])
+                outp = ""
+                if ~(isnothing(outpend))
+                    outp = s[ctypeend + 2:outpend[1] - 1]
+                end
+                inp = s[1:outpfirst[1] - 2]
+                Cell(string(celltype), string(inp), string(outp))
+            elseif contains(s, "\"\"\"")
+                rp = replace(s, "\n" => "")
+                if contains(rp[1:3], "\"\"\"") && contains(rp[length(rp) - 4:length(rp)], "\"\"\"")
+                    Cell("markdown", replace(s, "\"\"\"" => ""))
+                else
+                    Cell("code", string(s))
+                end
             else
                 Cell("code", string(s))
             end
-        else
-            Cell("code", string(s))
         end
-    end for s in lines]::Vector{Cell}
+    end for s in lines]))::Vector{Cell}
 end
 
 """
