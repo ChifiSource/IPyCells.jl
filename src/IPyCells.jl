@@ -82,8 +82,9 @@ mutable struct Cell{T <: Any} <: AbstractCell
     outputs::Any
     function Cell{T}(source::String = "", outputs::Any = ""; id::String = "") where {T <: Any}
         if id == ""
-            Random.seed!(rand(1:100000))
-            id = randstring(5)
+            sampler::String = "abcdefghijklmnopqrstuvwxyz"
+            samps = (rand(1:length(sampler)) for i in 1:5)
+            id = join(sampler[samp] for samp in samps)
         end
         new{Symbol(T)}(id, source, outputs)::Cell{T}
     end

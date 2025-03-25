@@ -242,7 +242,7 @@ function read_ipynb(f::String)
         source = string(join(cell["source"]))
         if "outputs" in keys(cell)
             cell_outputs = cell["outputs"]
-            if length(cell_outputs) > 0
+            if length(cell_outputs) > 0 && haskey(cell_outputs[1], "data")
                 outputs = first(cell_outputs[1]["data"])[2][1]
             end
         end
