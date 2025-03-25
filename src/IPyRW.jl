@@ -110,21 +110,29 @@ Parses plain julia into a `Vector{Cell}`.
 function parse_julia(raw::String)
     at::Int64 = 1
     cells::Vector{Cell} = Vector{Cell}()
+    
     while true
         nextend = findnext("end", raw, at)
         if isnothing(nextend)
             n::Int64 = length(raw)
-            if at != n && at - 1 != n
-                push!(cells, Cell{:code}(raw[at:length(raw)]))
+            if at <= n
+                push!(cells, Cell{:code}(raw[at:n]))
             end
             break
         end
-        nemax = maximum(nextend)
-        section::String = raw[at:nemax]
+        
+        nemax = maximum(nextend) + 2  # Include "end" properly
+        
+        if nemax > length(raw)
+            section = raw[at:length(raw)]
+        else
+            section = raw[at:nemax]  # Ensures "end" is included, no extra "d"
+        end
+        
         push!(cells, Cell{:code}(section))
-        at = nemax
+        at = nemax + 1  # Move past "end" properly
     end
-    cells::Vector{Cell}
+    return cells
 end
 
 """
