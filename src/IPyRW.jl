@@ -101,6 +101,9 @@ Reads a `.jl` `Olive` file from its `URI` into a `Vector{Cell}`.
 """
 read_olive(uri::String) = parse_olive(read(uri, String))
 
+
+julia_ndnames = ("begin", "module", "for", "if", "try", "function", "while", "struct", "abstract")
+
 """
 ```julia
 parse_julia(raw::String) -> ::Vector{Cell}
@@ -108,32 +111,42 @@ parse_julia(raw::String) -> ::Vector{Cell}
 Parses plain julia into a `Vector{Cell}`.
 """
 function parse_julia(raw::String)
-    at::Int64 = 1
-    cells::Vector{Cell} = Vector{Cell}()
-    
-    while true
-        nextend = findnext("end", raw, at)
-        if isnothing(nextend)
-            n::Int64 = length(raw)
-            if at <= n
-                push!(cells, Cell{:code}(raw[at:n]))
-            end
-            break
-        end
-        
-        nemax = maximum(nextend) + 2  # Include "end" properly
-        
-        if nemax > length(raw)
-            section = raw[at:length(raw)]
-        else
-            section = raw[at:nemax]  # Ensures "end" is included, no extra "d"
-        end
-        
-        push!(cells, Cell{:code}(section))
-        at = nemax + 1  # Move past "end" properly
-    end
-    return cells
+	at::Int64 = 1
+	cells::Vector{Cell} = Vector{Cell}()
+	current_section::String = ""
+	block_depth::Int = 0
+	while at <= length(raw)
+		nextend = findnext("end", raw, at)
+		if isnothing(nextend)
+			if at <= length(raw)
+				push!(cells, Cell{:code}(raw[at:end]))
+			end
+			break
+		end
+
+		nemax = maximum(nextend)
+		current_section *= raw[at:nemax]
+		if any(ndname -> occursin(ndname, current_section), julia_ndnames)
+			block_depth += 1
+		end
+		if occursin("end", raw[at:nemax])
+			block_depth -= 1
+		end
+		if block_depth == 0
+			push!(cells, Cell{:code}(strip(current_section)))
+			current_section = ""
+		end
+
+		at = nemax + 1
+	end
+
+	if !isempty(strip(current_section))
+		push!(cells, Cell{:code}(strip(current_section)))
+	end
+
+	return cells
 end
+
 
 """
 ```julia
