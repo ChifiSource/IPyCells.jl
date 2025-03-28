@@ -111,42 +111,73 @@ parse_julia(raw::String) -> ::Vector{Cell}
 Parses plain julia into a `Vector{Cell}`.
 """
 function parse_julia(raw::String)
-	at::Int64 = 1
 	cells::Vector{Cell} = Vector{Cell}()
+    current_line::Int64 = 0
 	current_section::String = ""
 	block_depth::Int = 0
-	while at <= length(raw)
-		nextend = findnext("end", raw, at)
-		if isnothing(nextend)
-			if at <= length(raw)
-				push!(cells, Cell{:code}(raw[at:end]))
-			end
-			break
-		end
+	in_string::Bool = false
+	in_comment::Bool = false
+    lines = split(raw, "\n")
+    n::Int64 = length(lines)
+	while true
+        current_line += 1
+        if current_line > n
+            if current_section != ""
+                push!(cells, Cell{:code}(current_section))
+            end
+            break
+        end
+        line::String = lines[current_line]
+        if in_string
+            if contains(line, "\"\"\"")
+                in_string = false
+                current_section = current_section * "\n" * line
+            else
+                current_section = current_section * "\n" * line
+            end
+            continue
+        elseif in_comment
+            if contains(line, "=#")
+                in_comment = false
+                current_section = current_section * "\n" * line
+            else
+                current_section = current_section * "\n" * line
+            end
+            continue
+        end
+        if contains(line, "\"\"\"")
+            current_section = current_section * "\n" * line
+            in_string = true
+            continue
+        end
+        if contains(line, "#=")
+            current_section = current_section * "\n" * line
+            in_comment = true
+            continue
+        end
 
-		nemax = maximum(nextend)
-		current_section *= raw[at:nemax]
-		if any(ndname -> occursin(ndname, current_section), julia_ndnames)
-			block_depth += 1
-		end
-		if occursin("end", raw[at:nemax])
-			block_depth -= 1
-		end
-		if block_depth == 0
-			push!(cells, Cell{:code}(strip(current_section)))
-			current_section = ""
-		end
-
-		at = nemax + 1
-	end
-
-	if !isempty(strip(current_section))
-		push!(cells, Cell{:code}(strip(current_section)))
-	end
-
-	return cells
+        contains_open = ~isnothing(findfirst(ndname -> contains(line, ndname), julia_ndnames))
+        contains_end = contains(line, "end")
+        if contains_open && ~contains_end
+            current_section = current_section * "\n" * line
+            block_depth += 1
+        elseif contains_open && contains_end && block_depth == 0
+            current_section = current_section * "\n" * line
+            push!(cells, Cell{:code}(current_section))
+            current_section = ""
+        elseif contains_end && block_depth == 0
+            current_section = current_section * "\n" * line
+            push!(cells, Cell(current_section))
+            current_section = ""
+        elseif contains_end && block_depth != 0
+            block_depth -= 1
+            current_section = current_section * "\n" * line
+        else
+            current_section = current_section * "\n" * line
+        end
+    end
+    cells::Vector{Cell}
 end
-
 
 """
 ```julia
