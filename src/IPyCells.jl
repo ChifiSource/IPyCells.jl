@@ -80,15 +80,15 @@ mutable struct Cell{T <: Any} <: AbstractCell
     id::String
     source::String
     outputs::Any
-    function Cell{T}(source::String = "", outputs::Any = ""; id::String = "") where {T <: Any}
+    function Cell{T}(source::AbstractString = "", outputs::Any = ""; id::String = "") where {T <: Any}
         if id == ""
             sampler::String = "abcdefghijklmnopqrstuvwxyz"
             samps = (rand(1:length(sampler)) for i in 1:5)
             id = join(sampler[samp] for samp in samps)
         end
-        new{Symbol(T)}(id, source, outputs)::Cell{T}
+        new{Symbol(T)}(id, string(source), outputs)::Cell{T}
     end
-    Cell(ctype::String = "code", source::String = "", outputs::Any = ""; id::String = "") = begin
+    Cell(ctype::String = "code", source::AbstractString = "", outputs::Any = ""; id::String = "") = begin
         Cell{Symbol(ctype)}(source, outputs, id = id)
     end
 end

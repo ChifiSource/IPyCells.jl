@@ -101,6 +101,9 @@ Reads a `.jl` `Olive` file from its `URI` into a `Vector{Cell}`.
 """
 read_olive(uri::String) = parse_olive(read(uri, String))
 
+
+julia_ndnames = ("begin", "module", "for", "if", "try", "function", "while", "struct", "abstract")
+
 """
 ```julia
 parse_julia(raw::String) -> ::Vector{Cell}
@@ -108,31 +111,72 @@ parse_julia(raw::String) -> ::Vector{Cell}
 Parses plain julia into a `Vector{Cell}`.
 """
 function parse_julia(raw::String)
-    at::Int64 = 1
-    cells::Vector{Cell} = Vector{Cell}()
-    
-    while true
-        nextend = findnext("end", raw, at)
-        if isnothing(nextend)
-            n::Int64 = length(raw)
-            if at <= n
-                push!(cells, Cell{:code}(raw[at:n]))
+	cells::Vector{Cell} = Vector{Cell}()
+    current_line::Int64 = 0
+	current_section::String = ""
+	block_depth::Int = 0
+	in_string::Bool = false
+	in_comment::Bool = false
+    lines = split(raw, "\n")
+    n::Int64 = length(lines)
+	while true
+        current_line += 1
+        if current_line > n
+            if current_section != ""
+                push!(cells, Cell{:code}(current_section))
             end
             break
         end
-        
-        nemax = maximum(nextend) + 2  # Include "end" properly
-        
-        if nemax > length(raw)
-            section = raw[at:length(raw)]
-        else
-            section = raw[at:nemax]  # Ensures "end" is included, no extra "d"
+        line::String = lines[current_line]
+        if in_string
+            if contains(line, "\"\"\"")
+                in_string = false
+                current_section = current_section * "\n" * line
+            else
+                current_section = current_section * "\n" * line
+            end
+            continue
+        elseif in_comment
+            if contains(line, "=#")
+                in_comment = false
+                current_section = current_section * "\n" * line
+            else
+                current_section = current_section * "\n" * line
+            end
+            continue
         end
-        
-        push!(cells, Cell{:code}(section))
-        at = nemax + 1  # Move past "end" properly
+        if contains(line, "\"\"\"")
+            current_section = current_section * "\n" * line
+            in_string = true
+            continue
+        end
+        if contains(line, "#=")
+            current_section = current_section * "\n" * line
+            in_comment = true
+            continue
+        end
+
+        contains_open = ~isnothing(findfirst(ndname -> contains(line, ndname), julia_ndnames))
+        contains_end = contains(line, "end")
+        if contains_open && ~contains_end
+            current_section = current_section * "\n" * line
+            block_depth += 1
+        elseif contains_open && contains_end && block_depth == 0
+            current_section = current_section * "\n" * line
+            push!(cells, Cell{:code}(current_section))
+            current_section = ""
+        elseif contains_end && block_depth == 0
+            current_section = current_section * "\n" * line
+            push!(cells, Cell(current_section))
+            current_section = ""
+        elseif contains_end && block_depth != 0
+            block_depth -= 1
+            current_section = current_section * "\n" * line
+        else
+            current_section = current_section * "\n" * line
+        end
     end
-    return cells
+    cells::Vector{Cell}
 end
 
 """
