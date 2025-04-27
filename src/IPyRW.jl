@@ -191,7 +191,7 @@ function read_jl(uri::String)
     readin::String = read(uri, String)
     # pluto
     if contains(readin, "═╡")
-        return(parse_plto(readin))::Vector{Cell}
+        return(parse_pluto(readin))::Vector{Cell}
     # olive
     elseif contains(readin, "#==output[") && contains(readin, "#==|||==#")
         return(parse_olive(readin))::Vector{Cell}
