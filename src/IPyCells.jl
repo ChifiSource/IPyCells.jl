@@ -95,12 +95,11 @@ end
 
 """
 IPyCells `Cell` `string` binding
----
+
 ```julia
 string(cell::Cell{<:Any}) -> ::String
 ```
 Converts a cell to a `String`. Used by `IPy.save` to write different cell types.
-### example
 ```julia
 cells = read_plto("myfile.jl")
 
