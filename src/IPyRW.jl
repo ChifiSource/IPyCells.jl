@@ -191,14 +191,13 @@ function read_jl(uri::String)
     readin::String = read(uri, String)
     # pluto
     if contains(readin, "═╡")
-        return(parse_plto(readin))::Vector{Cell}
+        return(parse_pluto(readin))::Vector{Cell}
     # olive
     elseif contains(readin, "#==output[") && contains(readin, "#==|||==#")
         return(parse_olive(readin))::Vector{Cell}
     end
     parse_julia(readin)::Vector{Cell}
 end
-
 
 """
 ```julia
@@ -221,6 +220,14 @@ function save(cells::Vector{<:AbstractCell}, path::String; raw::Bool = false)
     end
 end
 
+function jsonify_output(output::Any)
+    replace(string(output), "\\" => "\\\\", "\"" => "\\\"", "\n" => "\\n")::String
+end
+
+function jsonify_output(output::String)
+    replace(output, "\\" => "\\\\", "\"" => "\\\"", "\n" => "\\n")::String
+end
+
 """
 ```julia
 save_ipynb(cells::Vector{<:AbstractCell}, path::String) -> ::Nothing
@@ -229,11 +236,10 @@ Saves a `Vector{Cell}` as an `IPython` notebook for `IJulia`.
 - See also: `save`, `read_jl`, `parse_olive`, `ipyjl`
 """
 function save_ipynb(cells::Vector{<:AbstractCell}, path::String)
-    cell_str = """{\n"cells": ["""
+    cell_str::String = """{\n"cells": ["""
     cell_str = cell_str * join([begin
-    reps = ("\\" => "\\\\", "\"" => "\\\"", "\n" => "\\n")
-    new_outputs = replace(cell.outputs, reps ...)
-    new_source = replace(cell.source, reps ...)
+        new_outputs = jsonify_output(cell.outputs)
+        new_source = jsonify_output(cell.source)
         """{
    "cell_type": "$(typeof(cell).parameters[1])",
    "execution_count": 1,
